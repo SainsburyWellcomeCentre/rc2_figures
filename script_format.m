@@ -13,6 +13,8 @@ rc_names = {
     'Z:\swc\margrie\mvelez\mateoData_rc2\CAA-1110265\CAA-1110265\CAA-1110265_rec3_001.bin'};
 
 tic
+% ks_settings = format_ks_settings(ks_dir);
+anatomy = format_anatomy(ks_dir);
 clusters = format_clusters(ks_dir);
 sessions = format_sessions(rc_names);
 [t_sync, n_trig] = synchronize(ks_dir, rc_names);
@@ -20,4 +22,4 @@ toc
 
 sessions = recording_specific_correction(sessions, probe_fname);
 
-save(probe_fname, '-v7.3', 'clusters', 'sessions', 't_sync', 'n_trig')
+save(probe_fname, '-v7.3', 'anatomy', 'clusters', 'sessions', 't_sync', 'n_trig')
