@@ -8,10 +8,18 @@ probe_fname = {'CAA-1110262_rec1_rec2_rec3', ...
 
 session_n = 1;
 protocols = {'ReplayOnly', 'StageOnly'};
+% title_str = {'Locovest', 'Vis. Flow Only Replay', 'Locovest vs. Vis. Flow Only'};
+title_str = {'Vis. Flow Only Replay', 'Vest + Vis. Flow Replay', 'Vest + Vis. Flow vs. Vis. Flow Only'};
+
+
+
+
 
 rate_stationary = cell(length(probe_fname), 1);
 rate_motion = cell(length(probe_fname), 1);
 
+% default options
+options = default_options();
 
 for probe_i = 1 : length(probe_fname)
     
@@ -26,18 +34,17 @@ for probe_i = 1 : length(probe_fname)
     rate_stationary{probe_i} = cell(length(protocols), 1);
     rate_motion{probe_i} = cell(length(protocols), 1);
     
+    % filter clusters
+    f = create_cluster_filter();
+    f.from_file = cluster_id_fname;
+    f.region_str = {'VISp1', 'VISp2/3', 'VISp4', 'VISp5', 'VISp6a', 'VISp6b'};
+    clusters = filter_clusters(clusters, f);
+    
+    
     for prot_i = 1 : length(protocols)
         
         % get trials of the specified protocol
         trials = session_obj.trials_by_protocol(protocols{prot_i});
-        
-        % filter clusters
-        f = default_cluster_filter();
-        f.from_file = cluster_id_fname;
-        clusters = filter_clusters(clusters, f);
-        
-        % default options
-        options = default_options();
         
         % preallocate
         rate_stationary{probe_i}{prot_i} = nan(length(trials), length(clusters));
@@ -77,13 +84,13 @@ for probe_i = 1 : length(probe_fname)
     
     u.xlabel('Stationary (Hz)')
     u.ylabel('Motion (Hz)')
-    u.title('Vis. Flow Only Replay')
+    u.title(title_str{1})
     u2.xlabel('Stationary (Hz)')
     u2.ylabel('Motion (Hz)')
-    u2.title('Vest + Vis. Flow Replay')
+    u2.title(title_str{2})
     u3.xlabel('Vis. Flow Only (\Delta Hz)')
     u3.ylabel('Vest. + Vis. Flow (\Delta Hz)')
-    u3.title('Vest + Vis. Flow vs. Vis. Flow Only')
+    u3.title(title_str{3})
     
     FigureTitle(gcf, probe_fname{probe_i});
     
