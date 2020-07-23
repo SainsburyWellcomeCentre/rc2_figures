@@ -1,10 +1,10 @@
 % script for extracting and saving photodiode changes
-formatted_fname = 'C:\Users\Lee\Documents\mvelez\data\formatted_data\CAA-1110265_restricted_rec1_rec2_rec3.mat';
-save_as = 'CAA-1110265_rec1_rec2_rec3_sftf_times.mat';
-stim_type = 'sf_tf';
+formatted_fname = 'C:\Users\Lee\Documents\mvelez\data\formatted_data\CAA-1110262_rec1_rec2_rec3.mat';
+save_as = 'CAA-1110262_rec1_rec2_rec3_sparse_noise_times.mat';
+stim_type = 'sparse_noise';
 
 load(formatted_fname);
-session_n = 3;
+session_n = 2;
 
 % create session object
 session_obj = Session(sessions(session_n), t_sync{session_n});
@@ -13,7 +13,7 @@ pd = session_obj.photodiode;
 fs = session_obj.fs;
 T = session_obj.probe_t;
 
-fc = 5;
+fc = 12.5;
 [b, a] = butter(3, fc/(fs/2));
 pd_filt = filtfilt(b, a, pd);
 
