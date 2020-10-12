@@ -1,8 +1,6 @@
 % compare responses between all conditions
-clear all
-
 input('sure?')
-
+clear all
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% OPTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,15 +13,21 @@ restrict_to_high_velocity = false;
 use_delta_fr = false;
 
 % location in which to save PDF output
-save_dir = 'C:\Users\Lee\Desktop\Desktop\unity_all_v_all';
-save_on = false;
+save_dir = 'C:\Users\Lee\Desktop\Desktop\unity_plots';
+save_on = true;
 
 % name of the probe recordings to analyze
 probe_fname = {'CAA-1110262_rec1_rec2_rec3', ...
      'CAA-1110263_restricted_rec1_rec2_rec3', ...
      'CAA-1110264_rec1_rec2', ...
-     'CAA-1110265_restricted_rec1_rec2_rec3'};
+     'CAA-1110265_restricted_rec1_rec2_rec3', ...
+     'CAA-1112221_rec1_rec2_rec3', ...
+     'CAA-1112222_rec1_rec2_rec3', ...
+     'CAA-1112223_rec1_rec2_rec3', ...
+     'CAA-1112224_rec1_rec2_rec3'};
 
+ 
+ 
  % which session of the probe recording to analyze
 session_n           = 1;
 
@@ -59,7 +63,7 @@ region_str          = cell(length(probe_fname), 1);
 % total number of protocols
 n_prot              = length(protocols);
 
-% for each recording
+%% for each recording
 for probe_i = 1 : length(probe_fname)
     
     % print progress
@@ -240,7 +244,66 @@ for probe_i = 1 : length(probe_fname)
     if save_on
         join_pdfs(save_fnames, output_fname, true);
     end
+    
+    close all
 end
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 1. plot stationary v motion for each cluster, for each protocol %%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% the following will be appended to the filename of the pdf output 
+% for each recording
+save_ext = 'unity_stat_v_mot_pooled';
+
+% for each recording
+for probe_i = 1 : length(probe_fname)
+    
+    % number of clusters in this recording
+    n_clusters = size(rate_stationary{probe_i}{1}, 2);
+    
+    % which of the clusters resides in a cortical layer
+    cortical_idx = ismember(region_str{probe_i}, {'VISp1', 'VISp2/3', 'VISp4', 'VISp5', 'VISp6a', 'VISp6b'});
+    
+    % create a figure for each recording
+    figure('position', [90, 220, 1200, 1100]);
+    
+    % array to store the UnityPlot handles
+    h_unity = cell(n_prot);
+    
+    
+    for prot_i = 1 : n_prot
+        
+        new_rate_mot = rate_motion{probe_i}{prot_i}(:, cortical_idx);
+        new_rate_stat = rate_stationary{probe_i}{prot_i}(:, cortical_idx);
+        
+        
+        h_ax = subplot(3, 2, prot_i);
+        
+        h_unity{prot_i} = UnityPlot(new_rate_stat, new_rate_mot, h_ax, 'signrank');
+        
+        h_unity{prot_i}.xlabel('Stationary (Hz)')
+        h_unity{prot_i}.ylabel('Motion (Hz)')
+        
+    end
+    
+    % make sure all axes have the same dimensions
+    sync_axes([h_unity{:}])
+        
+    % overall figure title
+    FigureTitle(gcf, sprintf('%s', probe_fname{probe_i}));
+        
+    % generate name for PDF
+    save_fname = fullfile(save_dir, sprintf('%s_%s.pdf', probe_fname{probe_i}, save_ext));
+    
+    % print the PDF
+    if save_on
+        print(save_fname, '-bestfit', '-dpdf')
+    end
+end
+
 
 
 
@@ -286,17 +349,27 @@ for probe_i = 1 : length(probe_fname)
                 % generate the axis
                 h_ax = subplot(n_prot, n_prot, sp_i);
                 
-                % compute a delta firing rate for each trial of each
-                % protocol
-                delta_1 = rate_motion{probe_i}{prot_j}(:, clust_i)-rate_stationary{probe_i}{prot_j}(:, clust_i);
-                delta_2 = rate_motion{probe_i}{prot_i}(:, clust_i)-rate_stationary{probe_i}{prot_i}(:, clust_i);
+                if use_delta_fr
+                    % compute a delta firing rate for each trial of each
+                    % protocol
+                    delta_1 = rate_motion{probe_i}{prot_j}(:, clust_i)-rate_stationary{probe_i}{prot_j}(:, clust_i);
+                    delta_2 = rate_motion{probe_i}{prot_i}(:, clust_i)-rate_stationary{probe_i}{prot_i}(:, clust_i);
+                else
+                    delta_1 = rate_motion{probe_i}{prot_j}(:, clust_i);
+                    delta_2 = rate_motion{probe_i}{prot_i}(:, clust_i);
+                end
                 
                 % unity plot for this recording, for these two protocols
                 h_unity{prot_i, prot_j} = ClusterUnityPlot(delta_1, delta_2, h_ax, 'signrank');
                 
                 % axis labels and title
-                h_unity{prot_i, prot_j}.xlabel(sprintf('%s (\\Delta Hz)', label{prot_j}))
-                h_unity{prot_i, prot_j}.ylabel(sprintf('%s (\\Delta Hz)', label{prot_i}))
+                if use_delta_fr
+                    h_unity{prot_i, prot_j}.xlabel(sprintf('%s (\\Delta Hz)', label{prot_j}))
+                    h_unity{prot_i, prot_j}.ylabel(sprintf('%s (\\Delta Hz)', label{prot_i}))
+                else
+                    h_unity{prot_i, prot_j}.xlabel(sprintf('%s (\\Hz)', label{prot_j}))
+                    h_unity{prot_i, prot_j}.ylabel(sprintf('%s (\\Hz)', label{prot_i}))
+                end
             end
         end
         
@@ -319,6 +392,8 @@ for probe_i = 1 : length(probe_fname)
     % Join the PDFs with the following name
     output_fname = fullfile(save_dir, sprintf('%s_%s.pdf', probe_fname{probe_i}, save_ext));
     join_pdfs(save_fnames, output_fname, true);
+    
+    close all
 end
 
 
@@ -385,8 +460,8 @@ for probe_i = 1 : length(probe_fname)
                     rate_stationary{probe_i}{prot_i}(:, cortical_idx);
             else
                 % take delta as just the firing rate during motion
-                delta_1{p_count} = rate_baseline{probe_i}{prot_j}(:, cortical_idx);
-                delta_2{p_count} = rate_baseline{probe_i}{prot_i}(:, cortical_idx);
+                delta_1{p_count} = rate_motion{probe_i}{prot_j}(:, cortical_idx);
+                delta_2{p_count} = rate_motion{probe_i}{prot_i}(:, cortical_idx);
             end
             
             % unity plot for this recording, for these two protocols for

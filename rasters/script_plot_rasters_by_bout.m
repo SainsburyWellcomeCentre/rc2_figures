@@ -8,19 +8,19 @@ close all
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % location in which to save PDF output
-save_dir = 'C:\Users\Lee\Desktop\rasters';
+save_dir = 'C:\Users\Lee\Desktop\Desktop\rasters_around_motion_onset';
 
 % name of the probe recording to analyze
-probe_fname = 'CAA-1110265_restricted_rec1_rec2_rec3';
+probe_fname = 'CA_176_1_rec1_rec2_rec3';
 
 % which session of the probe recording to analyze
 session_n = 1;
 
 % which protocols to analyze
-protocols = {'Coupled', 'EncoderOnly', 'StageOnly', 'StageOnly', 'ReplayOnly', 'ReplayOnly'};
+protocols = {'Coupled', 'EncoderOnly', 'StageOnly'};
 
 % if the protocol includes a replay, what is it replaying?
-replay_of = {'', '', 'Coupled', 'EncoderOnly', 'Coupled', 'EncoderOnly'};
+replay_of = {'', '', 'Coupled', 'EncoderOnly'};
 
 % number of seconds before and after the bout to take
 prepad              = 3;
@@ -41,21 +41,17 @@ options = default_options();
 
 % location of the formatted data and cluster ID list
 formatted_data_fname = fullfile('C:\Users\Lee\Documents\mvelez\data\formatted_data', [probe_fname, '.mat']);
-cluster_id_fname = fullfile('C:\Users\Lee\Documents\mvelez\data\selected_clusters', [probe_fname, '_cluster_ids.txt']);
 
 % load the formatted data
-load(formatted_data_fname);
+data = load_data(formatted_data_fname);
 
 % filter clusters according to the cluster ID list file
-f = create_cluster_filter();
-f.from_file = cluster_id_fname;
-clusters = filter_clusters(clusters, f);
-
-% use the sync information to insert the time on the probe
-session_obj = Session(sessions(session_n), t_sync{session_n});
+clusters = data.clusters;
+idx = ismember([data.clusters(:).id], data.selected_clusters);
+clusters(~idx) = [];
 
 % get start time of motion bouts
-bouts = get_motion_bouts_by_session(session_obj, options.stationary);
+bouts = get_motion_bouts_by_session(data.sessions(1), options.stationary);
 
 % remove bouts below a certain duration
 bouts = bouts([bouts(:).duration] > min_bout_duration);
@@ -68,11 +64,11 @@ end_t = [bouts(:).start_time] + [bouts(:).duration];
 velocity_traces = bouts_to_traces(bouts, prepad, postpad);
 
 % shift traces to common timebase
-common_t = (-session_obj.fs*prepad + (0:size(velocity_traces, 1)-1))'/session_obj.fs;
+common_t = (-data.sessions(1).fs*prepad + (0:size(velocity_traces, 1)-1))'/data.sessions(1).fs;
 
 % use bout timings to get raster data
 [spike_rates, spike_times] = ...
-    get_raster_data(clusters, start_t, common_t, session_obj.fs, options.spiking);
+    get_raster_data(clusters, start_t, common_t, data.sessions(1).fs, options.spiking);
 
 % gather the trials in which the bouts occurred
 t = [bouts(:).trial];
@@ -91,6 +87,10 @@ title_str = {'Loco + Vest + Vis. Flow', ...
              'Vis. Flow Only (replay LocoVest)', ...
              'Vis. Flow Only (replay LocoOnly)'};
 
+title_str = {'Loco + Vest', ...
+             'Loco', ...
+             'Vest'};
+         
 % start and end bounds for the display
 win_start = -3;
 win_end = 5;

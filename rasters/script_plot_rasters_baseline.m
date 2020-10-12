@@ -8,11 +8,11 @@ close all
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % location in which to save PDF output
-save_dir = 'C:\Users\Lee\Desktop\Desktop\rasters_baseline';
+save_dir = 'C:\Users\Lee\Desktop\Desktop\rasters_around_baseline';
 save_on = true;
 
 % name of the probe recording to analyze
-probe_fname = 'CAA-1110264_rec1_rec2';
+probe_fname = 'CAA-1112222_rec1_rec2_rec3';
 
 % which session of the probe recording to analyze
 session_n = 1;
@@ -108,7 +108,7 @@ win_end = 10;
 save_fnames = cell(length(clusters), 1);
 
 %for each cluster
-for clust_i = length(clusters)-1:length(clusters)
+for clust_i = 1 : length(clusters)
     
     % create a raster display object
     r = RasterDisplayFigure(6);

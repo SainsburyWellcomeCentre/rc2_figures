@@ -1,19 +1,19 @@
 clear all
 
 
-probe_fname = {'CAA-1110262_rec1_rec2_rec3', ...
-    'CAA-1110263_restricted_rec1_rec2_rec3', ...
-    'CAA-1110264_rec1_rec2', ...
-    'CAA-1110265_restricted_rec1_rec2_rec3'};
+probe_fname = { 'CAA-1110262_rec1_rec2_rec3', ...
+                'CAA-1110263_restricted_rec1_rec2_rec3', ...
+                'CAA-1110264_rec1_rec2', ...
+                'CAA-1110265_restricted_rec1_rec2_rec3'};
 
 session_n = 1;
+
 protocols = {'ReplayOnly', 'StageOnly'};
+
 % title_str = {'Locovest', 'Vis. Flow Only Replay', 'Locovest vs. Vis. Flow Only'};
 title_str = {'Vis. Flow Only Replay', 'Vest + Vis. Flow Replay', 'Vest + Vis. Flow vs. Vis. Flow Only'};
 
-
-
-
+config = analysis_config();
 
 rate_stationary = cell(length(probe_fname), 1);
 rate_motion = cell(length(probe_fname), 1);

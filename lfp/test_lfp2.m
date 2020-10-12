@@ -5,6 +5,7 @@ probe_dir = {'E:\mateoData_probe\janelia_pipeline\CAA-1110262\CAA-1110262_rec1_r
 
 for probe_i = 1 : length(probe_dir)
     lf(probe_i) = LFP(probe_dir{probe_i});
+    ap(probe_i) = AP(probe_dir{probe_i});
 end
 
 
@@ -60,21 +61,35 @@ end
 
 
 %% Bandpower
-chans_to_process = 2 : 4 : lf(1).n_channels;
-bad_channels = intersect(chans_to_process, [lf(1).reference_channels, lf(1).trigger_channel]);
-good_channels = setdiff(chans_to_process, bad_channels);
+rec_i = 1;
 
-full_mtx = lf(2).get_data_between_t(chans_to_process, [2460, 2580], 's');
+start_t = 100;
 
-pow = nan(size(full_mtx, 1), 1);
-for chan_i = 1 : size(full_mtx, 1)
+for t_i = 1 : length(start_t)
     
-    trace = full_mtx(chan_i, :);
-    if mod(lf(1).n_samples, 2) == 1
-        trace = [trace, trace(end)];
+    figure
+    
+    for start_chan = 1 : 4
+        
+        chans_to_process = start_chan : 4 : lf(rec_i).n_channels;
+        bad_channels = intersect(chans_to_process, [lf(rec_i).reference_channels, lf(rec_i).trigger_channel]);
+        good_channels = setdiff(chans_to_process, bad_channels);
+        
+        full_mtx = lf(rec_i).get_data_between_t(good_channels, start_t(t_i) + [0, 1000], 's');%100, 220], 's'); % [2460, 2580]
+        
+        pow = nan(size(full_mtx, 1), 1);
+        
+        for chan_i = 1 : size(full_mtx, 1)
+            chan_i
+            trace = full_mtx(chan_i, :);
+            if mod(lf(1).n_samples, 2) == 1
+                trace = [trace, trace(end)];
+            end
+            pow(chan_i) = bandpower(trace, lf(rec_i).fs, [500, min(lf(rec_i).fs/2-1, 5000)]);
+        end
+        
+        hold on, plot(get_channel_distance_from_tip(good_channels-1), pow)
     end
     
-    pow(chan_i) = bandpower(trace, lf(1).fs, [500, min(lf(1).fs/2-1, 2500)]);
+    title(sprintf('[%i, %i]', start_t(t_i), start_t(t_i)+120))
 end
-
-hold on, plot(chans_to_process, pow)

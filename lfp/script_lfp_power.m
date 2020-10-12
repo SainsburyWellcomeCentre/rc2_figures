@@ -6,24 +6,26 @@ clear all
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % location of LFP recording
-animal_id = 'CAA-1110263_restricted';
+animal_id = 'CAA-1112532';
 probe_suffix = 'rec1_rec2_rec3';
-restrict_batches = false;
-batches_to_use = 1;
-search_above = 1000;
+restrict_batches = true;
+batches_to_use = 1:10;
+search_above = 1280;
+basedir = 'E:\mateoData_probe\janelia_pipeline'; % 'F:\steinmetz_probe';  % 'E:\mateoData_probe\janelia_pipeline';
 
 % Build filename for LFP data...
-lf_fname = fullfile('E:\mateoData_probe\janelia_pipeline', animal_id, ...
+lf_fname = fullfile(basedir, animal_id, ...
     sprintf('%s_%s_g0', animal_id, probe_suffix), ...
     sprintf('%s_%s_g0_imec0', animal_id, probe_suffix), ...
     sprintf('%s_%s_g0_t0.imec0.lf.bin', animal_id, probe_suffix));
 
 % KS-dir
-ks_dir = fullfile('E:\mateoData_probe\janelia_pipeline', animal_id, 'output', ...
+ks_dir = fullfile(basedir, animal_id, 'output', ...
     sprintf('catgt_%s_%s_g0', animal_id, probe_suffix), ...
     sprintf('%s_%s_g0_imec0', animal_id, probe_suffix), ...
     'imec0_ks2');
 
+track_fname = 'track_0';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% CALCULATE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,13 +34,13 @@ ks_dir = fullfile('E:\mateoData_probe\janelia_pipeline', animal_id, 'output', ..
 % compute the LFP on all channels
 [lfp_power, p, channel_list] = get_lfp_power(lf_fname);
 
-% for some mice it is beneficial to restrict the sampling of the LFP
+%% for some mice it is beneficial to restrict the sampling of the LFP
 if restrict_batches
-    lfp_power = mean(p(:, batches_to_use), 2);
+    lfp_power = mean(bsxfun(@rdivide, p(:, batches_to_use), max(p(:, batches_to_use), [], 1)), 2);%mean(p(:, batches_to_use), 2);
 end
 
 % distance from tip of each channel
-channel_from_tip = get_channel_distance_from_tip(channel_list);
+channel_from_tip = get_channel_distance_from_tip(channel_list-1);
 
 % take every other channel
 lfp_power_plot = lfp_power(1:2:end);
@@ -58,20 +60,30 @@ idx = [clusters(:).class] == "good";
 cluster_dist_from_tip = [clusters(idx).distance_from_probe_tip];
 
 % load the probe track csv file
-probe_track = read_track_csv(ks_dir, 'track_1');
+probe_track = read_track_csv(ks_dir, track_fname);
 
-% use to find positions of the boundaries from probe tip
-[boundaries, id, str] = find_layer_boundaries(probe_track);
-
-% find the middle of L5 using the anatomy boundaries
-mid_l5_anatomy = mid_L5_from_tip(boundaries, str);
-
-% difference between L5 from ephys and anatomy
-delta_l5 = mid_l5_ephys - mid_l5_anatomy;
-
-% use delta to correct the position of the boundaries
-boundaries_corrected = boundaries + delta_l5;
-
+if ~isempty(probe_track)
+    % use to find positions of the boundaries from probe tip
+    [boundaries, id, str] = find_layer_boundaries(probe_track);
+    
+    % find the middle of L5 using the anatomy boundaries
+    mid_l5_anatomy = mid_L5_from_tip(boundaries, str);
+    
+    % difference between L5 from ephys and anatomy
+    delta_l5 = mid_l5_ephys - mid_l5_anatomy;
+    
+    % use delta to correct the position of the boundaries
+    boundaries_corrected = boundaries + delta_l5;
+    
+else
+    
+    boundaries = [];
+    boundaries_corrected = [];
+    mid_l5_anatomy = nan;
+    delta_l5 = nan;
+    str = {};
+    id = [];
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +100,7 @@ subplot(1, 3, 1); hold on;
 norm_lfp = lfp_power_plot/max(lfp_power_plot);
 
 % draw the LFP power line
-plot(norm_lfp, channel_from_tip_plot, 'color', 'k', 'linewidth', 2); %p(1:2:end, :), 
+plot(bsxfun(@rdivide, p(1:2:end, 1:10), max(p(1:2:end, 1:10), [], 1)), channel_from_tip_plot, 'color', 'k', 'linewidth', 2); %p(1:2:end, :), 
 
 % somee formatting
 set(gca, 'ylim', [0, 2500], 'xlim', [0, 1.2])

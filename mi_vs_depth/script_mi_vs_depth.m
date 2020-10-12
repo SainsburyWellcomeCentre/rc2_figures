@@ -8,7 +8,7 @@ clear all
 
 % location in which to save PDF output
 save_dir = 'C:\Users\Lee\Desktop\Desktop\mi_vs_depth';
-save_on = false;
+save_on = true;
 
 % whether to use delta firing rate for the all v. all plots
 use_delta_fr = false;
@@ -17,7 +17,11 @@ use_delta_fr = false;
 probe_fname = {'CAA-1110262_rec1_rec2_rec3', ...
      'CAA-1110263_restricted_rec1_rec2_rec3', ...
      'CAA-1110264_rec1_rec2', ...
-     'CAA-1110265_restricted_rec1_rec2_rec3'};
+     'CAA-1110265_restricted_rec1_rec2_rec3', ...
+     'CAA-1112221_rec1_rec2_rec3', ...
+     'CAA-1112222_rec1_rec2_rec3', ...
+     'CAA-1112223_rec1_rec2_rec3', ...
+     'CAA-1112224_rec1_rec2_rec3'};
 
 % which session of the probe recording to analyze
 session_n           = 1;
@@ -198,7 +202,7 @@ for layer_i = 1 : length(layers)
 end
 
 % average their distances from the probe tip
-avg_boundaries = mean(avg_boundaries, 2);
+avg_boundaries = nanmean(avg_boundaries, 2);
 
 
 
