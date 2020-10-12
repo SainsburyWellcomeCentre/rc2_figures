@@ -1,0 +1,16 @@
+% There are extra triggers in the middle of sessions 2 and 3 in 
+%   CA_176_3_rec1_rec2_rec3 which are not associated with any RC2
+%   recording.
+% Here is the code from going from the probe file to the corrected trigger.
+
+bin_fname = 'E:\mateoData_probe\janelia_pipeline\CA_176_3\CA_176_3_rec1_rec2_rec3_g0\CA_176_3_rec1_rec2_rec3_g0_imec0\CA_176_3_rec1_rec2_rec3_g0_t0.imec0.ap.bin';
+trigger_fname = 'CA_176_3_rec1_rec2_rec3_trigger.mat';
+
+trigger = get_trigger_channel(bin_fname);
+
+n_secs_to_reset_start = 2600;
+n_secs_to_reset_end = 2640;
+
+trigger(n_secs_to_reset_start*30e3:n_secs_to_reset_end*30e3) = -2;
+
+save(trigger_fname, 'trigger');
