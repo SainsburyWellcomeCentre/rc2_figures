@@ -8,6 +8,10 @@ for ti = 1 : size(T2, 1)
     region_str  = T2.cluster_region{ti}{1};
     from_tip    = T2.cluster_from_tip(ti);
     
+    if strcmp(region_str, 'VISp2/3')
+        disp('');
+    end
+    
     % make sure that this is consistent
     idx         = strcmp(boundaries.probe_name, probe_name);
     
@@ -20,6 +24,10 @@ for ti = 1 : size(T2, 1)
     
     depths(ti) = 1 - (from_tip - lower(a)) / (upper(a) - lower(a));
 end
+
+
+
+
 
 
 % %

@@ -1,4 +1,4 @@
-function T2 = get_protocols_summary(T, prot_y, prot_x, replay_y, replay_x)
+function T2 = get_protocols_summary(T, prot_y, prot_x, replay_y, replay_x, vis_stim)
 
 warning('off', 'MATLAB:table:RowsAddedExistingVars');
 T2 = table();
@@ -15,8 +15,8 @@ for probe_i = 1 : length(probe_fnames)
     for clust_i = 1 : length(cluster_ids)
         
         this_cluster = T.cluster_id == cluster_ids(clust_i);
-        this_region = T.cluster_region(find(this_cluster, 1));
-        this_distance = T.cluster_from_tip(find(this_cluster, 1));
+        this_region = T.cluster_region(find(this_rec & this_cluster, 1));
+        this_distance = T.cluster_from_tip(find(this_rec & this_cluster, 1));
         
         this_prot_y = ismember(T.protocol, prot_y);
         idx_y = this_rec & this_cluster & this_prot_y;
@@ -31,11 +31,20 @@ for probe_i = 1 : length(probe_fnames)
         if ~isempty(replay_y)
             replay_of_y = cellfun(@(x)(isequal(x, replay_y)), T.replay_of);
             idx_y = idx_y & replay_of_y;
+            if strcmp(prot_x, 'stationary')
+                idx_x = idx_y;
+            end
         end
         
         if ~isempty(replay_x)
             replay_of_x = cellfun(@(x)(isequal(x, replay_x)), T.replay_of);
             idx_x = idx_x & replay_of_x;
+        end
+        
+        if ~isnan(vis_stim)
+            % account for visual stimulus
+            idx_x = idx_x & (T.vis_stim == vis_stim);
+            idx_y = idx_y & (T.vis_stim == vis_stim);
         end
         
         rate_y = T.motion_firing_rate(idx_y);

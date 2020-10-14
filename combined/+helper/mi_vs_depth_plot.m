@@ -14,15 +14,14 @@ for i = 1 : size(T2, 1)
     d(i) = boundaries.upper(r) - (boundaries.upper(r) - boundaries.lower(r))*depths(i);
 end
 
-
-scatter(mi(idx_blue), d(idx_blue), [], 'b', 'fill');
-scatter(mi(idx_red), d(idx_red), [], 'r', 'fill');
-scatter(mi(idx_black), d(idx_black), [], 'k', 'fill');
+scatter(mi(idx_black), d(idx_black), 10, 'k', 'fill');
+scatter(mi(idx_blue), d(idx_blue), 20, 'b', 'fill');
+scatter(mi(idx_red), d(idx_red), 20, 'r', 'fill');
 
 % plot the layer boundaries
 for b_i = 1 : length(boundaries.region)
     
-    if b_i > 1
+    if b_i == 1
         line([-1, 1], boundaries.upper(b_i)*[1, 1], 'color', 'k', 'linestyle', '--');
     end
     line([-1, 1], boundaries.lower(b_i)*[1, 1], 'color', 'k', 'linestyle', '--');
