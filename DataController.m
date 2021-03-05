@@ -1,0 +1,65 @@
+classdef DataController < handle
+    
+    properties
+        
+        data
+        config
+    end
+    
+    methods
+        
+        function obj = DataController(data, par)
+            
+            obj.data = data;
+            obj.config = par;
+        end
+        
+        
+        function selected_clusters = selected_clusters(obj)
+            
+            selected_clusters = obj.data.clusters;
+            idx = ismember([obj.data.clusters(:).id], obj.data.selected_clusters);
+            selected_clusters(~idx) = [];
+            
+        end
+        
+        
+        function visp_clusters = VISp_clusters(obj, is_selected)
+            
+            VariableDefault('is_selected', true);
+            
+            if is_selected
+                selected_clusters = obj.selected_clusters();
+            else
+                selected_clusters = obj.data.clusters;
+            end
+            
+            idx = regexp({selected_clusters(:).region_str}, 'VISp\d');
+            idx = ~cellfun(@isempty, idx);
+            
+            visp_clusters = selected_clusters(idx);
+            
+        end
+        
+        
+        function trials = mismatch_trials(obj)
+            
+            % get mismatch trials
+            if strcmp(obj.data.probe_recording, 'CAA-1112872_rec1_rec1b_rec2_rec3')
+                trials = [obj.data.sessions(1).trials, obj.data.sessions(2).trials];
+            else
+                trials = [obj.data.sessions(1).trials];
+            end
+            
+        end
+        
+        
+        function fs = sample_rate(obj)
+            
+            fs = obj.data.sessions(1).fs;
+            
+        end
+        
+    end
+    
+end
