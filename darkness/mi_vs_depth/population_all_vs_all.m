@@ -1,4 +1,4 @@
-experiment              = 'darkness';
+experiment              = 'visual_flow';
 
 config                  = RC2AnalysisConfig();
 

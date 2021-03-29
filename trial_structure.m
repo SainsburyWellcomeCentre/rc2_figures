@@ -29,7 +29,7 @@ for probe_i = 1 : length(probe_fnames)
             this_trial = AlignedTrial(this_trial, replayed_trial, offset);
         end
         
-        TrialAnatomy(this_trial);
+        TrialStructure(this_trial);
         
         figs.save_fig_to_join();
     end

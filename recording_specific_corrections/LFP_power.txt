@@ -1,5 +1,0 @@
-LFP
-
-For CAA-1110262, the LFP across the entire recording is very flat. However, at the  beginning of the recording the notable peak (presumably L5) is more prominent.
-Therefore, LFP was determined from beginning of recording (10s at 1minute into the recording)
-

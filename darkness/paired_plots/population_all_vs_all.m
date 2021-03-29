@@ -66,6 +66,8 @@ for prot_y = 1 : length(protocols)-1
             p_all{prot_y, prot_x}, ...
             h_ax);
         
+        u(end).plot();
+        
         u(end).xlabel(protocol_labels{prot_x});
         u(end).ylabel(protocol_labels{prot_y});
         u(end).add_histogram(1);

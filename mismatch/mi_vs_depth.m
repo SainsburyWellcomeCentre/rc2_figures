@@ -1,27 +1,18 @@
-% plot motion vs. stationary
-
-experiment              = 'visual_flow';
-
 config                  = RC2AnalysisConfig();
 
 figs                    = RC2Figures(config);
 figs.save_on            = true;
-figs.set_figure_subdir(experiment, 'population_mi_vs_depth');
+figs.set_figure_subdir('mismatch_nov20', 'population_unity_plots');
 
-probe_fnames            = experiment_details(experiment, 'protocols');
+probe_fnames            = experiment_details('mismatch_nov20', 'protocol');
 
-if strcmp(experiment, 'visual_flow')
-    protocols           = VisualFlowExperiment.protocol_ids;
-    protocol_labels     = VisualFlowExperiment.protocol_label;
-elseif strcmp(experiment, 'darkness')
-    protocols           = DarknessExperiment.protocol_ids;
-    protocol_labels     = DarknessExperiment.protocol_label;
-end
-
+protocols               = MismatchExperiment.protocol_ids;
+protocol_labels         = MismatchExperiment.protocol_label;
 
 x_all                   = cell(length(protocols), 1);
 y_all                   = cell(length(protocols), 1);
 p_all                   = cell(length(protocols), 1);
+
 relative_depth          = [];
 layer                   = {};
 anatomies               = Anatomy.empty();
@@ -32,12 +23,8 @@ for probe_i = 1 : length(probe_fnames)
     clusters            = data.VISp_clusters;
     anatomies(probe_i)  = Anatomy(data);
     
-    if strcmp(experiment, 'visual_flow')
-        exp_obj         = VisualFlowExperiment(data, config);
-    elseif strcmp(experiment, 'darkness')
-        exp_obj         = DarknessExperiment(data, config);
-    end
-    
+    exp_obj             = MismatchExperiment(data, config);
+
     for cluster_i = 1 : length(clusters)
         
         [relative_depth(end+1), layer{end+1}] = ...
@@ -46,18 +33,23 @@ for probe_i = 1 : length(probe_fnames)
         
         for prot_i = 1 : length(protocols)
             
-            x           = exp_obj.trial_stationary_fr(clusters(cluster_i).id, protocols(prot_i));
-            y           = exp_obj.trial_motion_fr(clusters(cluster_i).id, protocols(prot_i));
+            [baseline, response, response_ctl] = exp_obj.windowed_mm_responses(clusters(cluster_i), prot_i);
             
-            x_all{prot_i}(end+1) = nanmedian(x);
-            y_all{prot_i}(end+1) = nanmedian(y);
-            p_all{prot_i}(end+1) = signrank(x, y);
-
-            fprintf('%s, nnan x: %i\n', probe_fnames{probe_i}, sum(isnan(x)));
-            fprintf('%s, nnan y: %i\n', probe_fnames{probe_i}, sum(isnan(y)));
+            x_all{prot_i}(end+1) = nanmean(baseline(:));
+            y_all{prot_i}(end+1) = nanmean(response(:));
+            
+            p = mm_do_ANOVA(baseline', response');
+            p_ctl = mm_do_ANOVA(baseline', response_ctl');
+            
+            if p_ctl(1) < 0.05
+                p_all{prot_i}(end+1) = nan;
+            else
+                p_all{prot_i}(end+1) = p(1);
+            end
         end
     end
 end
+
 
 % average the anatomy
 avg_anatomy = AverageAnatomy(anatomies);
