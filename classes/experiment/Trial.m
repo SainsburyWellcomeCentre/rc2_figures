@@ -40,6 +40,7 @@ classdef Trial < handle
         gain_teensy
         filtered_teensy
         filtered_teensy_2
+        raw_teensy
         multiplexer_output
         pump
         lick
@@ -152,6 +153,12 @@ classdef Trial < handle
         
         function val = get.filtered_teensy_2(obj)
             val = obj.session.filtered_teensy_2(obj.start_idx:obj.end_idx);
+        end
+        
+        
+        
+        function val = get.raw_teensy(obj)
+            val = obj.session.raw_teensy(obj.start_idx:obj.end_idx);
         end
         
         
