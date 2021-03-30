@@ -285,7 +285,7 @@ classdef Trial < handle
         function idx = baseline_window(obj)
              
             switch obj.protocol
-                case {'EncoderOnly', 'Coupled'}
+                case {'EncoderOnly', 'Coupled', 'CoupledMismatch', 'EncoderOnlyMismatch'}
                     sol_down_i = find(diff(obj.solenoid > 2.5) == -1, 1);
                     
                     idx = obj.rc2_t > obj.rc2_t(sol_down_i) - 3 & ...
@@ -398,7 +398,7 @@ classdef Trial < handle
             remove_at_end = 0.55;
             add_before_solenoid_low = 2;
             
-            if any(strcmp(obj.protocol, {'Coupled', 'EncoderOnly'}))
+            if any(strcmp(obj.protocol, {'Coupled', 'EncoderOnly', 'CoupledMismatch', 'EncoderOnlyMismatch'}))
                 
                 % where is solenoid low
                 idx = find(obj.solenoid < 2.5) + 1; idx(end) = [];
@@ -548,6 +548,17 @@ classdef Trial < handle
             
             mm_offset_idx = find(diff(obj.teensy_gain > 2.5) == -1) + 1;
             t = obj.probe_t(mm_offset_idx);
+        end
+        
+        
+        
+        function mask = mismatch_window(obj)
+            
+            mm_onset_idx = find(diff(obj.teensy_gain > 2.5) == 1) + 1;
+            mm_offset_idx = find(diff(obj.teensy_gain > 2.5) == -1) + 1;
+            
+            mask = false(length(obj.rc2_t), 1);
+            mask(mm_onset_idx : (mm_offset_idx + 0.05*obj.fs)) = true;
         end
     end
 end
