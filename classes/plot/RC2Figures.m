@@ -64,7 +64,7 @@ classdef RC2Figures < handle
                 if use_opengl
                     print(obj.fnames_to_join{obj.n_figs_to_join}, '-dpdf', '-opengl', sprintf('-r%i', dpi));
                 else
-                    print(obj.fnames_to_join{obj.n_figs_to_join}, '-dpdf', '-painters');
+                    print(obj.fnames_to_join{obj.n_figs_to_join}, '-bestfit', '-dpdf', '-painters');
                 end
             end
         end
