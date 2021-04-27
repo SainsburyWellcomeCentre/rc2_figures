@@ -71,35 +71,28 @@ classdef TuningCurvePlot < RC2Axis
                     mean(obj.fr) < obj.stat_fr  % p_anova >= 0.05 && ...
                 % tonic decrease
                 main_col = multicol(1, :);
-%             elseif p_anova < 0.05 && obj.beta >= 0 %obj.fr(end) >= obj.fr(1)
-%                 % speed tuned +
-%                 main_col = multicol(3, :);
-%             elseif p_anova < 0.05 && obj.beta < 0 %obj.fr(end) < obj.fr(1)
-%                 % speed tuned -
-%                 main_col = multicol(4, :);
             else
                 main_col = 'k';
             end
             
             for i = 1 : obj.n_shuffs_to_plot
                 
-                obj.h_line_shuff(i) = line(obj.x, obj.shuff.shuff_tuning(:, i), 'color', [0.8, 0.8, 0.8]);
-                obj.h_dots_shuff(i) = scatter(obj.x, obj.shuff.shuff_tuning(:, i), [], [0.8, 0.8, 0.8], 'fill');
-                
-                for j = 1 : size(obj.shuff.shuff_tuning, 1)
-                    if strcmp(obj.error_type, 'std')     
-                        y = obj.shuff.shuff_tuning(j, i) + obj.shuff.shuff_sd(j, i) * [-1, 1];
-                    else
-                        y = obj.shuff.shuff_tuning(j, i) + (obj.shuff.shuff_sd(j, i) / sqrt(obj.shuff.shuff_n(j, i))) * [-1, 1];
-                    end
-                    
-                    obj.h_errorbars_shuff(i, j) = line(obj.x([j, j]), y, 'color', [0.8, 0.8, 0.8]);
-                end
+%                 obj.h_line_shuff(i) = line(obj.x, obj.shuff.shuff_tuning(:, i), 'color', [0.8, 0.8, 0.8]);
+% %                 obj.h_dots_shuff(i) = scatter(obj.x, obj.shuff.shuff_tuning(:, i), [], [0.8, 0.8, 0.8], 'fill');
+%                 
+%                 for j = 1 : size(obj.shuff.shuff_tuning, 1)
+%                     if strcmp(obj.error_type, 'std')     
+%                         y = obj.shuff.shuff_tuning(j, i) + obj.shuff.shuff_sd(j, i) * [-1, 1];
+%                     else
+%                         y = obj.shuff.shuff_tuning(j, i) + (obj.shuff.shuff_sd(j, i) / sqrt(obj.shuff.shuff_n(j, i))) * [-1, 1];
+%                     end
+%                     
+%                     obj.h_errorbars_shuff(i, j) = line(obj.x([j, j]), y, 'color', [0.8, 0.8, 0.8]);
+%                 end
                 
                 f = [min(obj.x), max(obj.x)]*obj.shuff.beta_shuff(i, 1) + obj.shuff.beta_shuff(i, 2);
                 obj.h_fit_shuff(i) = line([min(obj.x), max(obj.x)], f, 'color', [0.8, 0.8, 0.8]);
             end
-            
             
             
             obj.h_line = line(obj.x, obj.fr, 'color', main_col);
@@ -126,12 +119,18 @@ classdef TuningCurvePlot < RC2Axis
                 line([0, 0], obj.stat_fr + (obj.stat_sd/sqrt(obj.stat_n)) * [-1, 1], 'color', [0.5, 0.5, 0.5])
             end
             
+            str = sprintf('slope = %.2f\n', obj.shuff.beta(1));
+            str = [str, sprintf('r = %.2f\n', obj.shuff.r)];
+            str = [str, sprintf('R^2 = %.2f\n', obj.shuff.rsq)];
+            
             if obj.shuff.p < 0.05
-                str = sprintf('p_{shuffled}=%.2e', obj.shuff.p);
+                str = [str, sprintf('p_{shuffled}=%.2e\n', obj.shuff.p)];
+                str = [str, sprintf('p_{fitted}=%.2e', obj.shuff.p_lm)];
                 col = 'r';
             else
-                str = sprintf('p_{shuffled}=%.2f', obj.shuff.p);
-                col = 'k';
+                str = [str, sprintf('p_{shuffled}=%.2f\n', obj.shuff.p)];
+                str = [str, sprintf('p_{fitted}=%.2f', obj.shuff.p_lm)];
+                col = 'b';
             end
             
             if obj.shuff.beta(1) >= 0 && obj.shuff.p < 0.05

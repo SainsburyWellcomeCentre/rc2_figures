@@ -8,6 +8,7 @@ window_2                = 0.1 + [0, window_t];
 display_window          = [-1, 1];
 protocol                = 2;
 
+
 %%
 config                  = RC2AnalysisConfig();
 
@@ -16,7 +17,7 @@ protocol_labels         = MismatchExperiment.protocol_label;
 
 figs                    = RC2Figures(config);
 figs.save_on            = true;
-figs.set_figure_subdir('mismatch', 'running_change_at_mm', sprintf('%ims_%isd_offset_protocol_%i', 1e3*window_t, n_sds, protocol));
+figs.set_figure_subdir('mismatch', datestr(now, 'yyyymmdd'), 'running_change_at_mm', sprintf('%ims_%isd_offset_protocol_%i', 1e3*window_t, n_sds, protocol));
 
 probe_fnames            = experiment_details('mismatch_nov20', 'protocol');
 
@@ -39,7 +40,7 @@ for probe_i = 1 : length(probe_fnames)
     
     exp_obj             = MismatchExperiment(data, config);
     
-    for prot_i = protocol%1 : length(protocols)
+    for prot_i = protocol
         
         %%
         h_fig                   = figs.a4figure();
@@ -110,76 +111,57 @@ for probe_i = 1 : length(probe_fnames)
         
         
         for cluster_i = 1 : length(clusters)
-            store_spikes_up = [store_spikes_up, mean(spike_rate{cluster_i}(:, trial_class == 1), 2)];
+%             store_spikes_up = [store_spikes_up, mean(spike_rate{cluster_i}(:, trial_class == 1), 2)];
             store_spikes_down = [store_spikes_down, mean(spike_rate{cluster_i}(:, trial_class == 2), 2)];
-            store_spikes_none = [store_spikes_none, mean(spike_rate{cluster_i}(:, trial_class == 3), 2)];
+            store_spikes_none = [store_spikes_none, mean(spike_rate{cluster_i}(:, ismember(trial_class, [1, 3])), 2)];
             store_spikes_all = [store_spikes_all, mean(spike_rate{cluster_i}, 2)];
         end
         
         FigureTitle(gcf, sprintf('%s, %s', probe_fnames{probe_i}, protocol_labels{prot_i}));
         
-        figs.save_fig_to_join();
+%         figs.save_fig_to_join();
     end
     
-    figs.join_figs(sprintf('%s.pdf', probe_fnames{probe_i}));
-    figs.clear_figs();
+%     figs.join_figs(sprintf('%s.pdf', probe_fnames{probe_i}));
+%     figs.clear_figs();
 end
+
+% combine positive
+store_running_none = [store_running_none, store_running_up];
+
 
 
 
 %% PLOT AVERAGES
-n_up = size(store_running_up, 2);
-yM = 40;
+yM              = 60;
+grey_col        = 0.6;
+h_fig           = figs.a4figure();
 
-h_fig                   = figs.a4figure();
 
 subplot(2, 4, 1)
 hold on
-if n_up > 0
-    m = mean(store_running_up, 2)';
-    s = std(store_running_up, [], 2)';
-    fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
-    plot(t, m, 'k');
-end
-ylim([0, yM]);
-xlim([-1, 1]);
-line([0, 0], [0, yM], 'color', 'k')
-text(0, yM, sprintf('n = %i', n_up), 'verticalalignment', 'top', 'horizontalalignment', 'left');
-xlabel('Time from MM onset (s)')
-ylabel('Running (cm/s)')
-title('Positive change trials');
-box off
-
-subplot(2, 4, 2)
-hold on
-m = mean(store_running_down, 2)';
-s = std(store_running_down, [], 2)';
-fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
-plot(t, m, 'k');
+plot(t, store_running_down, 'color', grey_col([1, 1, 1]));
+plot(t, mean(store_running_down, 2), 'k', 'linewidth', 2);
 ylim([0, yM]);
 line([0, 0], [0, yM], 'color', 'k')
 text(0, yM, sprintf('n = %i', size(store_running_down, 2)), 'verticalalignment', 'top', 'horizontalalignment', 'left');
 title('Negative change trials');
 box off
 
-subplot(2, 4, 3)
+subplot(2, 4, 2)
 hold on
-m = mean(store_running_none, 2)';
-s = std(store_running_none, [], 2)';
-fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
-plot(t, m, 'k');
+plot(t, store_running_none, 'color', grey_col([1, 1, 1]));
+plot(t, mean(store_running_none, 2), 'k', 'linewidth', 2);
 ylim([0, yM]);
 line([0, 0], [0, yM], 'color', 'k');
 text(0, yM, sprintf('n = %i', size(store_running_none, 2)), 'verticalalignment', 'top', 'horizontalalignment', 'left');
 title('No change trials');
 box off
 
-subplot(2, 4, 4)
+subplot(2, 4, 3)
 hold on
-m = mean(store_running_all, 2)';
-s = std(store_running_all, [], 2)';
-fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
-plot(t, m, 'k');
+plot(t, store_running_all, 'color', grey_col([1, 1, 1]));
+plot(t, mean(store_running_all, 2), 'k', 'linewidth', 2);
 ylim([0, yM]);
 line([0, 0], [0, yM], 'color', 'k');
 text(0, yM, sprintf('n = %i', size(store_running_all, 2)), 'verticalalignment', 'top', 'horizontalalignment', 'left');
@@ -191,35 +173,13 @@ figs.save_fig('averages.pdf');
 
 
 
-n_up = size(store_running_up, 2);
 yL = [-4, 6];
 bsl = t > -1 & t < 0;
 m_rm = bsxfun(@minus, store_spikes_all, mean(store_spikes_all(bsl, :), 1));
 m_all = nanmean(m_rm, 2)';
 s_all = nanstd(m_rm, [], 2)'/sqrt(sum(~isnan(m_rm(1, :))));
 
-
 subplot(2, 4, 5)
-hold on
-if n_up > 0
-    
-    m_rm = bsxfun(@minus, store_spikes_up, mean(store_spikes_up(bsl, :), 1));
-    
-    m = nanmean(m_rm, 2)';
-    s = nanstd(m_rm, [], 2)'/sqrt(sum(~isnan(m_rm(1, :))));
-    
-    h = fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], 'r');
-    set(h, 'facealpha', 0.6);
-    plot(t, m, 'r');
-end
-ylim(yL);
-line([0, 0], yL, 'color', 'k');
-ylabel('\Delta Hz');
-title('Positive change trials');
-box off
-
-
-subplot(2, 4, 6)
 hold on
 m_rm = bsxfun(@minus, store_spikes_down, mean(store_spikes_down(bsl, :), 1));
 m = nanmean(m_rm, 2)';
@@ -232,8 +192,7 @@ line([0, 0], yL, 'color', 'k');
 title('Negative change trials');
 box off
 
-
-subplot(2, 4, 7)
+subplot(2, 4, 6)
 hold on
 m_rm = bsxfun(@minus, store_spikes_none, mean(store_spikes_none(bsl, :), 1));
 m = nanmean(m_rm, 2)';
@@ -246,8 +205,7 @@ line([0, 0], yL, 'color', 'k');
 title('No change trials');
 box off
 
-
-subplot(2, 4, 8)
+subplot(2, 4, 7)
 hold on
 fill([t, t(end:-1:1)], [m_all-s_all, m_all(end:-1:1)+s_all(end:-1:1)], [0.7, 0.7, 0.7]);
 plot(t, m_all, 'k');
@@ -256,11 +214,5 @@ line([0, 0], yL, 'color', 'k');
 title('All trials');
 box off;
 
-
 FigureTitle(gcf, 'Average running speed around MM onset');
 figs.save_fig('averages_with_spikes.pdf');
-
-
-
-
-

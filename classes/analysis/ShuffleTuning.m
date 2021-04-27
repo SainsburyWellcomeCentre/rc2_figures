@@ -1,5 +1,5 @@
 classdef ShuffleTuning < handle
-
+    
     properties
         
         n_reps = 1000
@@ -10,14 +10,17 @@ classdef ShuffleTuning < handle
         
         rsq
         beta
+        r
         
         rsq_shuff
         beta_shuff
+        r_shuff
         shuff_tuning
         shuff_sd
         shuff_n
         
         p
+        p_lm
     end
     
     
@@ -25,7 +28,7 @@ classdef ShuffleTuning < handle
     methods
         
         function obj = ShuffleTuning(tuning, x)
-            
+        % Shuffle
             obj.x = x(:); % n bins x 1
             obj.tuning = tuning; % n bins x n trials
             obj.n_bins = size(obj.tuning, 1);
@@ -33,16 +36,19 @@ classdef ShuffleTuning < handle
             
             % fit to data R^2
             x_ = repmat(obj.x, 1, obj.n_trials);
-            [obj.rsq, obj.beta] = obj.get_rsq(x_(:), tuning(:));
-                
+            lm = fitlm(x_(:), tuning(:));
+            obj.p_lm = lm.Coefficients.pValue(2);
+            
+            [obj.rsq, obj.beta, obj.r] = obj.get_rsq(x_(:), tuning(:));
+            
             obj.get_shuffled_rsq();
             
             if isnan(obj.rsq)
                 obj.p = nan;
             else
                 p_up = sum(obj.rsq_shuff > obj.rsq)/obj.n_reps;
-                p_down = sum(obj.rsq_shuff < obj.rsq)/obj.n_reps;
-                obj.p = min(p_up, p_down);
+%                 p_down = sum(obj.rsq_shuff < obj.rsq)/obj.n_reps;
+                obj.p = p_up; %min(p_up, p_down);
             end
         end
         
@@ -51,7 +57,10 @@ classdef ShuffleTuning < handle
         function get_shuffled_rsq(obj)
             
             rng(1);
+            
             x_ = repmat(obj.x, 1, obj.n_trials);
+            
+            % preallocate arrays
             obj.rsq_shuff = nan(1, obj.n_reps);
             obj.beta_shuff = nan(obj.n_reps, 2);
             obj.shuff_tuning = nan(obj.n_bins, obj.n_reps);
@@ -62,18 +71,19 @@ classdef ShuffleTuning < handle
                 I = randi(numel(obj.tuning), size(obj.tuning));
                 new_tuning = obj.tuning(I);
                 
-                [obj.rsq_shuff(rand_i), ...
-                    obj.beta_shuff(rand_i, :)] = obj.get_rsq(x_(:), new_tuning(:));
+                [obj.rsq_shuff(rand_i), obj.beta_shuff(rand_i, :), obj.r_shuff(rand_i, :)] = ...
+                    obj.get_rsq(x_(:), new_tuning(:));
                 
                 obj.shuff_tuning(:, rand_i) = nanmean(new_tuning, 2);
                 obj.shuff_sd(:, rand_i) = nanstd(new_tuning, [], 2);
                 obj.shuff_n(:, rand_i) = sum(~isnan(new_tuning), 2);
             end
         end
+    end
+    
+    methods (Static = true)
         
-        
-        
-        function [rsq, beta] = get_rsq(obj, x, tuning)
+        function [rsq, beta, r] = get_rsq(x, tuning)
             
             x(isnan(tuning)) = [];
             tuning(isnan(tuning)) = [];
@@ -84,6 +94,7 @@ classdef ShuffleTuning < handle
             SSresid = sum(yresid.^2);
             SStotal = (length(tuning)-1) * var(tuning);
             rsq = 1 - SSresid/SStotal;
+            r = corr(x, tuning);
         end
     end
 end

@@ -352,7 +352,7 @@ classdef MVTExperiment < handle
             trial_type = obj.protocol_type{obj.protocol_ids == protocol_id};
             replayed_type = obj.protocol_replayed_type{obj.protocol_ids == protocol_id};
             
-            if strcmp(replayed_type, 'any')
+            if strcmp(replayed_type, 'any') || isempty(replayed_type)
                 idx = obj.svm_table.cluster_id == cluster_id & ...
                     strcmp(obj.svm_table.protocol, trial_type);
             else

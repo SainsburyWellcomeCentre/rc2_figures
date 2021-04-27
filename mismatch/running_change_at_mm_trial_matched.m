@@ -5,9 +5,10 @@
 clear all
 close all
 
-window_t                = [-0.2, 0.2];
+window_t                = [0, 0.15];
 display_window          = [-1, 1];
 protocol                = 2;
+
 
 
 %%
@@ -29,6 +30,7 @@ store_running_matched   = [];
 store_spikes_mm         = [];
 store_spikes_matched    = [];
 
+load('avg_to_compare', 'avg_to_compare');
 
 for probe_i = 1 : length(probe_fnames)
     
@@ -37,8 +39,8 @@ for probe_i = 1 : length(probe_fnames)
     
     exp_obj             = MismatchExperiment(data, config);
     
-    for prot_i = protocol%1 : length(protocols)  % 
-                
+    for prot_i = protocol
+        
         [running, t] = exp_obj.running_around_mismatch(prot_i, display_window);
         
         mm_spike_rate = cell(1, length(clusters));
@@ -50,35 +52,63 @@ for probe_i = 1 : length(probe_fnames)
         trials = exp_obj.trials_of_type(prot_i);
         
         for trial_i = 1 : length(trials)
+            
             trial_i
+            
             comparison_idx = t > window_t(1) & t < window_t(2);
             
             % velocity around mismatch to compare
             mismatch_velocity = running(comparison_idx, trial_i);
             
+            
+            
+            first_sample_to_compare = find(comparison_idx, 1);
+            n_samples_to_compare = length(mismatch_velocity);
+            
+%             mismatch_velocity  = linspace(5, 16, n_samples_to_compare)';
+%             mismatch_velocity = mismatch_velocity(end:-1:1);
+            
+            mismatch_velocity = avg_to_compare(:);
+            n_samples_to_compare = length(mismatch_velocity);
+            
             % velocity up to the mismatch
             mm_onset_t = trials(trial_i).mismatch_onset_t();
             mm_onset_idx = find(trials(trial_i).probe_t > mm_onset_t, 1, 'first');
             
-            normal_velocity = trials(trial_i).velocity((length(mismatch_velocity)+1):mm_onset_idx);
+            normal_velocity = trials(trial_i).velocity(first_sample_to_compare : mm_onset_idx);
             
-            err = nan(length(normal_velocity) - length(mismatch_velocity), 1);
-            for sample_i = 1 : length(normal_velocity) - length(mismatch_velocity)
+            err = nan(length(normal_velocity) - n_samples_to_compare, 1);
+            amp_matched = nan(length(normal_velocity) - n_samples_to_compare, 1);
+            amp_mm = range(mismatch_velocity);
+            
+            for sample_i = 1 : length(normal_velocity) - n_samples_to_compare
                 
-                cut_normal_velocity = normal_velocity(sample_i + (0:length(mismatch_velocity)-1));
+                cut_normal_velocity = normal_velocity(sample_i + (0:n_samples_to_compare-1));
                 err(sample_i) = sum((cut_normal_velocity - mismatch_velocity).^2);
+                amp_matched(sample_i) = range(cut_normal_velocity);
             end
-            [~, I] = min(err);
+%             [~, I] = min(err);
+            [~, sort_idx] = sort(err);
+            amp_matched = amp_matched(sort_idx);
             
-            size(running, 1)/2;
-            matched_idx = I + round(length(mismatch_velocity)/2) + (0:size(running, 1)-1);
+            I = find(amp_matched > amp_mm, 1);
+            
+            if isempty(I)
+                [~, I] = min(err);
+            else
+                I = sort_idx(I);
+            end
+            
+            matched_idx = I + (0:size(running, 1)-1);
+            matched_idx(matched_idx < 1) = 1;
+            matched_idx(matched_idx > mm_onset_idx) = mm_onset_idx;
             
             store_running_mm = [store_running_mm, running(:, trial_i)];
             store_running_matched = [store_running_matched, trials(trial_i).velocity(matched_idx)];
             
             n_samples = range(display_window) * trials(1).fs;
             common_t = display_window(1) + (0:n_samples-1)*(1/trials(trial_i).fs);
-            matched_t = trials(trial_i).probe_t(I + round(length(mismatch_velocity)/2));
+            matched_t = trials(trial_i).probe_t(I);
             time_base = common_t + matched_t;
             
             for cluster_i = 1 : length(clusters)
@@ -98,17 +128,18 @@ end
 
 %% PLOT AVERAGES
 n_up = size(store_running_mm, 2);
-yM = 40;
+yM = 60;
 
 h_fig                   = figs.a4figure();
 
 subplot(2, 2, 1)
 hold on
 if n_up > 0
-    m = mean(store_running_mm, 2)';
-    s = std(store_running_mm, [], 2)';
-    fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
-    plot(t, m, 'k');
+%     m = mean(store_running_mm, 2)';
+%     s = std(store_running_mm, [], 2)';
+%     fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
+    plot(t, store_running_mm, 'color', [0.6, 0.6, 0.6]);
+    plot(t, mean(store_running_mm, 2), 'k');
 end
 ylim([0, yM]);
 xlim([-1, 1]);
@@ -121,10 +152,11 @@ box off
 
 subplot(2, 2, 2)
 hold on
-m = mean(store_running_matched, 2)';
-s = std(store_running_matched, [], 2)';
-fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
-plot(t, m, 'k');
+% m = mean(store_running_matched, 2)';
+% s = std(store_running_matched, [], 2)';
+% fill([t, t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], [0.7, 0.7, 0.7]);
+plot(t, store_running_matched, 'color', [0.6, 0.6, 0.6]);
+plot(t, mean(store_running_matched, 2), 'k');
 ylim([0, yM]);
 line([0, 0], [0, yM], 'color', 'k')
 text(0, yM, sprintf('n = %i', size(store_running_matched, 2)), 'verticalalignment', 'top', 'horizontalalignment', 'left');
