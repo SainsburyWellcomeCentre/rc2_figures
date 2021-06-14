@@ -31,7 +31,7 @@ title_str       = {'VT', 'V', 'T'};
 
 for probe_i = 1 : length(probe_fnames)
     
-    data = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     
     exp_obj = PassiveExperiment(data, config);
     

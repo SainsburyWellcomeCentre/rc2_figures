@@ -27,7 +27,7 @@ options = default_options();
 
 for probe_i = 1 : length(probe_fnames)
     
-    data = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     vf = VisualFlowExperiment(data, config);
     
     base_t = {};

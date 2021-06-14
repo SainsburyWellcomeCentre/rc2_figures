@@ -3,10 +3,10 @@ classdef DarknessExperiment < MVTExperiment
     
     properties (Constant = true)
         
-        protocol_ids = 1 : 3
-        protocol_type = {'Coupled', 'EncoderOnly', 'StageOnly'};
-        protocol_replayed_type = {'', '', 'any'};
-        protocol_label = {'MT', 'M', 'T (MT & M & Bank)'};    
+        protocol_ids = 1 : 6
+        protocol_type = {'Coupled', 'EncoderOnly', 'StageOnly', 'StageOnly', 'StageOnly', 'StageOnly'};
+        protocol_replayed_type = {'', '', 'any', 'Coupled', 'EncoderOnly', 'Bank'};
+        protocol_label = {'MT', 'M', 'T (MT & M & Bank)', 'T (MT)', 'T (M)', 'T (Bank)'};    
     end
     
     
@@ -43,6 +43,28 @@ classdef DarknessExperiment < MVTExperiment
                 trials = obj.trials_of_type_replay_of_type('StageOnly', 'Bank');
             end
             
+        end
+        
+        
+        
+        function idx = get_svm_table_index(obj, cluster_id, protocol_id)
+            
+            trial_type = obj.protocol_type{obj.protocol_ids == protocol_id};
+            replayed_type = obj.protocol_replayed_type{obj.protocol_ids == protocol_id};
+            
+            if strcmp(replayed_type, 'any') || isempty(replayed_type)
+%                 idx = obj.svm_table.cluster_id == cluster_id & ...
+%                     strcmp(obj.svm_table.protocol, trial_type);
+                idx = obj.svm_table.cluster_id == cluster_id & ...
+                    obj.svm_table.protocol == trial_type;
+            else
+%                 idx = obj.svm_table.cluster_id == cluster_id & ...
+%                     strcmp(obj.svm_table.protocol, trial_type) & ...
+%                     strcmp(obj.svm_table.replay_of, replayed_type);
+                idx = obj.svm_table.cluster_id == cluster_id & ...
+                    obj.svm_table.protocol == trial_type & ...
+                    obj.svm_table.replay_of == replayed_type;
+            end
         end
     end
 end

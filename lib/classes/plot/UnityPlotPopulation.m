@@ -102,7 +102,5 @@ classdef UnityPlotPopulation < UnityPlot
             assert(length(idx) == length(obj.x))
             scatter(obj.h_ax, obj.x(idx), obj.y(idx), scatterball_size(1.3), 'm');
         end
-        
     end
-    
 end

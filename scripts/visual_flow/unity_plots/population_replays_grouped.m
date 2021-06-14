@@ -1,8 +1,10 @@
+spiking_class           = 'FS';
+
 config                  = RC2AnalysisConfig();
 
 figs                    = RC2Figures(config);
-figs.save_on            = false;
-figs.set_figure_subdir('visual_flow', 'population_unity_plots');
+figs.save_on            = true;
+figs.set_figure_subdir('visual_flow', 'population_unity_plots', spiking_class);
 
 probe_fnames            = experiment_details('visual_flow', 'protocols');
 
@@ -10,13 +12,14 @@ protocols               = VisualFlowExperiment.protocol_ids;
 
 x_all                   = cell(length(protocols), 1);
 y_all                   = cell(length(protocols), 1);
+is_increase             = cell(length(protocols), 1);
 p_all                   = cell(length(protocols), 1);
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     vf                  = VisualFlowExperiment(data, config);
-    clusters            = data.VISp_clusters;
+    clusters            = data.VISp_clusters([], spiking_class);
     
     for prot_i = 1 : 3
         

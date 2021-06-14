@@ -4,7 +4,7 @@ main_trial_types    = {'Coupled', 'EncoderOnly', 'StageOnly'};
 
 for probe_i = 1 : length(probe_fnames)
     
-    data            = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     dark            = DarknessExperiment(data, config);
     clusters        = data.selected_clusters;
     

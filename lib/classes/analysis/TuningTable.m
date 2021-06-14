@@ -73,7 +73,7 @@ classdef TuningTable < handle
         
         function save_table(obj)
             
-            mat_fname = fullfile(obj.config.summary_data, 'tuning_table', sprintf('%s.mat', obj.probe_fname));
+            mat_fname = fullfile(obj.config.summary_data_dir, 'tuning_table', sprintf('%s.mat', obj.probe_fname));
             tuning_table = obj.tt_table; %#ok<NASGU>
             save(mat_fname, 'tuning_table'); 
         end

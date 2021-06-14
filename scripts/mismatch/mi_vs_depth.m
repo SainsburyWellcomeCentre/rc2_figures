@@ -19,7 +19,7 @@ anatomies               = Anatomy.empty();
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     clusters            = data.VISp_clusters;
     anatomies(probe_i)  = Anatomy(data);
     

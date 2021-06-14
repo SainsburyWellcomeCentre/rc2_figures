@@ -35,7 +35,7 @@ fname_suffix = {'MVT', 'MV'};
 for probe_i = 1 : length(probe_fnames)
     
     % all data for this probe recording
-    data = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     
     % get visual flow experiment object
     vf = VisualFlowExperiment(data, config);

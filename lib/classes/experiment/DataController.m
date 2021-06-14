@@ -2,16 +2,18 @@ classdef DataController < handle
     
     properties
         
+        experiment_type
         data
         config
     end
     
     methods
         
-        function obj = DataController(data, par)
+        function obj = DataController(data, config)
             
             obj.data = data;
-            obj.config = par;
+            obj.experiment_type = data.experiment_type;
+            obj.config = config;
         end
         
         

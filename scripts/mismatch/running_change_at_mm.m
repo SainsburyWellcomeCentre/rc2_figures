@@ -35,7 +35,7 @@ cluster_c                 = 0;
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     clusters            = data.VISp_clusters;
     
     exp_obj             = MismatchExperiment(data, config);
@@ -45,11 +45,11 @@ for probe_i = 1 : length(probe_fnames)
         %%
         h_fig                   = figs.a4figure();
         
-        [running, t] = exp_obj.running_around_mismatch(prot_i, display_window);
+        [running, t] = exp_obj.running_around_mismatch_by_protocol(prot_i, display_window);
         
         spike_rate = {};
         for cluster_i = 1 : length(clusters)
-            spike_rate{cluster_i} = exp_obj.firing_around_mismatch(clusters(cluster_i), prot_i, display_window);
+            spike_rate{cluster_i} = exp_obj.firing_around_mismatch_by_protocol(clusters(cluster_i), prot_i, display_window);
         end
         
         trials = exp_obj.trials_of_type(prot_i);

@@ -43,7 +43,7 @@ options             = default_options();
 
 for i = 1 : length(probe_fname)
     
-    data                = config.load_formatted_data(probe_fname{i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     if ismember(i, [1, 2, 7, 8])
         exp_obj             = DarknessExperiment(data, config);
     else

@@ -71,7 +71,7 @@ classdef StationaryVsMotionTable < handle
             obj.svm_table.time_motion(table_row) = obj.current_motion_time;
             
             if isfield(obj.current_trial.config, 'enable_vis_stim')
-                if isdouble(obj.current_trial.config.enable_vis_stim)
+                if isnumeric(obj.current_trial.config.enable_vis_stim)
                     obj.svm_table.vis_stim(table_row) = obj.current_trial.config.enable_vis_stim;
                 else
                     obj.svm_table.vis_stim(table_row) = str2double(obj.current_trial.config.enable_vis_stim);
@@ -85,7 +85,7 @@ classdef StationaryVsMotionTable < handle
         
         function save_table(obj)
             
-            csv_fname = fullfile(obj.config.summary_data, 'stationary_vs_motion_fr', sprintf('%s.csv', obj.probe_fname));
+            csv_fname = fullfile(obj.config.summary_data_dir, 'stationary_vs_motion_fr', sprintf('%s.csv', obj.probe_fname));
             writetable(obj.svm_table, csv_fname); 
         end
         

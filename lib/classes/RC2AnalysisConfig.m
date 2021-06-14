@@ -3,9 +3,9 @@ classdef RC2AnalysisConfig < handle
     properties
         
         figure_dir = 'C:\Users\Lee\Documents\mvelez\figures'
-        formatted_data_dir  = 'C:\Users\Lee\Documents\mvelez\data\formatted_data'
-        summary_data = 'C:\Users\Lee\Documents\mvelez\data\summary_data'
-        
+        local_data_dir = 'C:\Users\Lee\Documents\mvelez\data';
+        formatted_data_dir
+        summary_data_dir
     end
     
     methods
@@ -14,14 +14,20 @@ classdef RC2AnalysisConfig < handle
         end
         
         
-        
-        function data = load_formatted_data(obj, probe_recording)
+        function val = get.formatted_data_dir(obj)
             
-            formatted_data_fname = fullfile(obj.formatted_data_dir, [probe_recording, '.mat']);
-            data = load_data(formatted_data_fname);
-            data.probe_recording = probe_recording;
-            data = DataController(data, obj);
+            val = fullfile(obj.local_data_dir, 'formatted_data');
         end
+        
+        
+        function val = get.summary_data_dir(obj)
+            
+            val = fullfile(obj.local_data_dir, 'summary_data');
+        end
+        
+        
+        
+        
         
     end
 end

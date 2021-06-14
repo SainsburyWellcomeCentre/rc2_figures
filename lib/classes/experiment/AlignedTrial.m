@@ -12,6 +12,7 @@ classdef AlignedTrial < handle
         is_replay
         replay_of
         replayed_trial_id
+        min_bout_duration = 2
     end
     
     

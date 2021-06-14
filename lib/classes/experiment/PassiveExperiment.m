@@ -6,7 +6,7 @@ classdef PassiveExperiment < MVTExperiment
         protocol_ids = 1 : 3
         protocol_type = {'StageOnly', 'ReplayOnly', 'StageOnly'};
         protocol_vis_stim = [1, 1, 0];
-        protocol_label = {'VT', 'V', 'T'};    
+        protocol_label = {'VT', 'V', 'T'};
     end
     
     
@@ -17,6 +17,15 @@ classdef PassiveExperiment < MVTExperiment
             obj = obj@MVTExperiment(data_obj, config);
             
             obj.trials = data_obj.data.sessions(1).trials;
+        end
+        
+        
+        
+        function val = label_from_id(obj, protocol_id)
+            
+            idx = obj.protocol_ids == protocol_id;
+            assert(sum(idx) == 1, 'No such protocol id: %i', protocol_id);
+            val = obj.protocol_label{idx};
         end
         
         
@@ -61,6 +70,15 @@ classdef PassiveExperiment < MVTExperiment
             idx = obj.svm_table.cluster_id == cluster_id & ...
                     strcmp(obj.svm_table.protocol, trial_type) & ...
                     obj.svm_table.vis_stim == vis_stim;
+        end
+        
+        
+        function val = get_trial_protocol_id(obj, trial)
+            
+            idx_vis = obj.protocol_vis_stim == trial.config.enable_vis_stim;
+            idx_stage = strcmp(obj.protocol_type, trial.protocol);
+            
+            val = obj.protocol_ids(idx_vis & idx_stage);
         end
     end
 end

@@ -85,6 +85,10 @@ classdef Trial < handle
                     obj.replayed_trial_id = [];
                 end
             end
+            
+            
+            % correct for missing data
+            obj = correct_at_trial_object_creation(obj);
         end
         
         
@@ -263,7 +267,10 @@ classdef Trial < handle
         
         
         function val = get.filtered_teensy(obj)
-             val = obj.session.filtered_teensy(obj.start_idx:obj.end_idx);
+            val = [];
+            if ~isempty(obj.session.filtered_teensy)
+                val = obj.session.filtered_teensy(obj.start_idx:obj.end_idx);
+            end
         end
         
         
@@ -302,7 +309,7 @@ classdef Trial < handle
         end
         
         
-        
+
         function val = position(obj, deadband, mask)
             
             VariableDefault('deadband', 0.1);
@@ -401,7 +408,7 @@ classdef Trial < handle
             remove_at_end = 0.55;
             add_before_solenoid_low = 2;
             
-            if any(strcmp(obj.protocol, {'Coupled', 'EncoderOnly', 'CoupledMismatch', 'EncoderOnlyMismatch'}))
+            if any(strcmp(obj.protocol, {'Coupled', 'EncoderOnly'}))
                 
                 % where is solenoid low
                 idx = find(obj.solenoid < 2.5) + 1; idx(end) = [];
@@ -413,6 +420,27 @@ classdef Trial < handle
                 % remove 500ms before solenoid goes high
                 idx_new = (idx(1) - add_before_solenoid_low * obj.fs) : (idx(1)-1);
                 idx_new = [idx_new, (idx(1) + remove_after_solenoid_start * obj.fs) : (idx(end) - remove_at_end * obj.fs)];
+            
+            elseif any(strcmp(obj.protocol, {'CoupledMismatch', 'EncoderOnlyMismatch'}))
+                
+                after_mm_to_remove = 3;
+                
+                % where is solenoid low
+                idx = find(obj.solenoid < 2.5) + 1; idx(end) = [];
+                
+                assert(length(unique(diff(idx))) == 1, 'solenoid not down contiguously');
+                
+                % add in 2s before the solenoid goes low, 
+                % remove 200ms after solenoid goes low
+                % remove 500ms before solenoid goes high
+                idx_new = (idx(1) - add_before_solenoid_low * obj.fs) : (idx(1)-1);
+                idx_new = [idx_new, (idx(1) + remove_after_solenoid_start * obj.fs) : (idx(end) - remove_at_end * obj.fs)];
+                
+                % find mismatch onset
+                mm_onset_idx = find(diff(obj.teensy_gain > 2.5) == 1) + 1;
+                
+                % remove 3s after mismatch onset
+                idx_new = [idx_new(1):mm_onset_idx, (mm_onset_idx + after_mm_to_remove*obj.fs):idx_new(end)];
                 
             elseif any(strcmp(obj.protocol, {'StageOnly', 'ReplayOnly'}))
                 
@@ -465,13 +493,7 @@ classdef Trial < handle
             VariableDefault('remove_after_solenoid_start', 0.2);
             
             switch obj.protocol
-                case 'Coupled'
-                    
-                    mask = obj.analysis_window(remove_after_solenoid_start) & ...
-                       obj.treadmill_motion_mask() & ...
-                       obj.solenoid < 2.5;
-                
-                case 'EncoderOnly'
+                case {'Coupled', 'EncoderOnly', 'CoupledMismatch', 'EncoderOnlyMismatch'}
                     
                     mask = obj.analysis_window(remove_after_solenoid_start) & ...
                        obj.treadmill_motion_mask() & ...
@@ -527,6 +549,14 @@ classdef Trial < handle
             s = cellfun(@(x)(x(1)), cc.PixelIdxList);
             e = cellfun(@(x)(x(end)), cc.PixelIdxList);
             
+            % make sure the sample before is genuinely stationary and not
+            % just the start of an analysis window
+            stat_mask = obj.stationary_mask();
+            true_motion_start = stat_mask(s-1);
+            
+            s = s(true_motion_start);
+            e = e(true_motion_start);
+            
             if isempty(s)
                 bouts = [];
                 return
@@ -536,7 +566,7 @@ classdef Trial < handle
                 bouts(i) = MotionBout(s(i), e(i), obj);
             end
             
-            bouts = bouts([bouts(:).duration] > obj.min_bout_duration);
+%             bouts = bouts([bouts(:).duration] > obj.min_bout_duration);
         end
         
         

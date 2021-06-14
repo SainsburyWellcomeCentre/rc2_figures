@@ -10,14 +10,11 @@
 clear all
 close all
 
-window_t                = 0.2;
 n_sds                   = 2;
-window_1                = -0.15 + [0, window_t];
-window_2                = 0.1 + [0, window_t];
-window_t                = [0, 0.15];
+window_1                = [-0.15, 0.05];
+window_2                = [0.1, 0.3];
 display_window          = [-1, 1];
 protocol                = 2;
-use_average_trace       = true;  % use an average trace for template matching or each mismatch trial?
 
 
 
@@ -42,25 +39,26 @@ store_spikes_matched    = [];
 store_details           = [];
 
 fname = '1s';
-if use_average_trace
-    
-    % average trace is a 1s long trace from -1 to 1s around mismatch onset
-    load('avg_to_compare_1s.mat', 'avg_to_compare');
-    
-    % template velocity
-    template_velocity = avg_to_compare(:);
-    
-    % the number of samples to compare on each window
-    n_samples_to_compare = length(template_velocity);
-    
-    % minimum amplitude we will attempt to find
-    template_amplitude = range(template_velocity);
-end
+
+% average trace is a 1s long trace from -1 to 1s around mismatch onset
+load('avg_to_compare_1s.mat', 'avg_to_compare');
+
+% template velocity
+template_velocity = avg_to_compare(:);
+
+% the number of samples to compare on each window
+n_samples_to_compare = length(template_velocity);
+
+% minimum amplitude we will attempt to find
+template_amplitude = range(template_velocity);
+
+
+
 
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     clusters            = data.VISp_clusters;
     
     exp_obj             = MismatchExperiment(data, config);
@@ -72,11 +70,10 @@ for probe_i = 1 : length(probe_fnames)
         n_trials = length(trials);
         
         % get running traces for each trial to display
-        [display_running, display_t] = exp_obj.running_around_mismatch(prot_i, display_window);
+        [display_running, display_t] = exp_obj.running_around_mismatch_by_protocol(prot_i, display_window);
         
-        % make sure it's consistent
-        assert(n_trials == size(display_running, 2), ...
-            'Size of running traces is not equal to number of trials');
+        n_samples = size(display_running, 1) * trials(1).fs;
+        common_t = display_window(1) + (0:n_samples-1)*(1/10e3);
         
         % preallocate cell array for spike rates of each cluster
         mm_spike_rate = cell(1, length(clusters));
@@ -85,7 +82,7 @@ for probe_i = 1 : length(probe_fnames)
         for cluster_i = 1 : length(clusters)
             
             % for this cluster, get the spike rate around the mismatch
-            mm_spike_rate{cluster_i} = exp_obj.firing_around_mismatch(clusters(cluster_i), prot_i, display_window);
+            mm_spike_rate{cluster_i} = exp_obj.firing_around_mismatch_by_protocol(clusters(cluster_i), prot_i, display_window);
             
             % make sure it is the same number of trials
             assert(n_trials == size(display_running, 2), ...
@@ -96,121 +93,124 @@ for probe_i = 1 : length(probe_fnames)
             cluster_fr(cluster_i) = FiringRate(clusters(cluster_i).spike_times);
         end
         
+        n_samples_before_match_to_show = find(display_t > 0, 1);
+        n_samples_after_match_to_show = sum(display_t > 0);
+        
+        % search these trials (with translation)
+        search_trials = [exp_obj.trials_of_type(1), exp_obj.trials_of_type(2)];
+        
+        % store the data each loop
+        velocities_to_search = {};
+        times_for_search = {};
+        
+        % gather all running data for this mouse
+        for trial_i = 1 : length(search_trials)
+            
+            mm_onset_t      = search_trials(trial_i).mismatch_onset_t();
+            mm_onset_idx    = find(search_trials(trial_i).probe_t > mm_onset_t, 1, 'first');
+            
+            analysis_window = search_trials(trial_i).analysis_window();
+            
+            search_idx_1 = n_samples_before_match_to_show : mm_onset_idx - n_samples_after_match_to_show;
+            search_idx_2 = mm_onset_idx + 3 * 10000 : find(analysis_window, 1, 'last') - n_samples_after_match_to_show;
+            
+            % velocities
+            velocities_to_search{end+1} = search_trials(trial_i).velocity(search_idx_1);
+            velocities_to_search{end+1} = search_trials(trial_i).velocity(search_idx_2);
+            
+            % corresponding probe times
+            times_for_search{end+1} = search_trials(trial_i).probe_t(search_idx_1);
+            times_for_search{end+1} = search_trials(trial_i).probe_t(search_idx_2);
+        end
+        
+        err = {};
+        err_t = {};
+        
+        % do the search
+        for search_i = 1 : length(velocities_to_search)
+            
+            % number of samples we have to search
+            n_samples_to_search = length(velocities_to_search{search_i}) - n_samples_to_compare;
+            
+            % preallocate error and 
+            err{search_i} = nan(n_samples_to_search, 1);
+            err_t{search_i} = nan(n_samples_to_search, 1);
+            
+            for sample_i = 1 : n_samples_to_search - 3
+                
+                subsearch_velocity = velocities_to_search{search_i}(sample_i + (0:n_samples_to_compare-1));
+                err{search_i}(sample_i) = sum((subsearch_velocity - template_velocity).^2);
+                err_t{search_i}(sample_i) = times_for_search{search_i}(n_samples_before_match_to_show + sample_i);
+            end
+        end
+        
+        
+        
+        % take the 26 sample points with the lowest error
+        min_errors  = nan(1, length(err));
+        min_idx     = nan(1, length(err));
+        
+        for search_i = 1 : length(err)
+            [a, b] = min(err{search_i});
+            if isempty(a)
+                min_errors(search_i) = inf;
+                min_idx(search_i) = -1;
+            else
+                [min_errors(search_i), min_idx(search_i)] = min(err{search_i});
+            end
+        end
+        
+        
+        % sort these errors
+        [min_errors_sorted, min_errors_sorted_idx] = sort(min_errors, 'ascend');
+        
+        
+        min_errors_to_take = min_errors_sorted_idx(1:26);
+        
+        store_running_matched = [];
+        
+        trigger_t = nan(1, length(min_errors_to_take));
+        
+        for search_i = 1 : length(min_errors_to_take)
+            
+            trigger_t(search_i) = err_t{min_errors_to_take(search_i)}(min_idx(search_i));
+            time_base = common_t + trigger_t(search_i);
+            
+            vel = velocities_to_search{min_errors_to_take(search_i)}(min_idx(search_i) - n_samples_before_match_to_show + (0 : length(display_t)-1));
+            
+            store_running_matched = [store_running_matched, vel(:)];
+            
+            for cluster_i = 1 : length(clusters)
+                matched_spike_rate{cluster_i}(:, end+1) = cluster_fr(cluster_i).get_convolution(time_base);
+            end
+        end
+        
+        
+        % 
         include_trial = false(1, n_trials);
         
         
         for trial_i = 1 : n_trials
             
-            % determine whether the trial has changed velocity after
-            % mismatch
-            baseline_idx = display_t > window_1(1) & display_t < window_1(2);
-            response_idx = display_t >= window_2(1) & display_t < window_2(2);
+            % was there a change in velocity for this trial?
+            changed_down = exp_obj.trial_changed_velocity(trials(trial_i).id, window_1, window_2, n_sds);
             
-            m_before = mean(display_running(baseline_idx, trial_i));
-            sd = std(display_running(baseline_idx, trial_i));
-            
-            m_after = mean(display_running(response_idx, trial_i));
-            
-            changed_down_idx = any(m_after < m_before - n_sds*sd);
-            
-            if ~changed_down_idx
+            % skip trial if there was no change in velocity
+            if ~changed_down
                 continue
             end
             
-            % if we are not using the average trace, get the template from
-            % the mismatch running profile
-            if ~use_average_trace
-                template_idx = display_t > 0 & display_t < 1;
-                template_velocity = display_running(template_idx, trial_i);
-                n_samples_to_compare = length(template_velocity);
-            end
-            
-            % since, when we find a match we are looking back -1s
-            % we need to start the search this many samples into
-            % trial(x).velocity
-            n_samples_before_match_to_show = find(display_t > 0, 1);
-            n_samples_after_match_to_show = sum(display_t > 0);
-            
-            % onset of mismatch (trial sample index)
-            mm_onset_t      = trials(trial_i).mismatch_onset_t();
-            mm_onset_idx    = find(trials(trial_i).probe_t > mm_onset_t, 1, 'first');
-            
-            % we search in this space
-            %   n_samples_before_match_to_show:n_samples_after_match
-            search_idx = n_samples_before_match_to_show : mm_onset_idx - n_samples_after_match_to_show; %%%%%%
-            
-            % velocity to search
-            search_velocity = trials(trial_i).velocity(search_idx);
-            
-            % number of samples we have to search
-            n_samples_to_search = length(search_velocity) - n_samples_to_compare;
-            
-            % preallocate error and 
-            err = nan(n_samples_to_search, 1);
-            subsearch_amplitude = nan(n_samples_to_search, 1);
-            
-            for sample_i = 1 : n_samples_to_search
-                
-                subsearch_velocity = search_velocity(sample_i + (0:n_samples_to_compare-1));
-                err(sample_i) = sum((subsearch_velocity - template_velocity).^2);
-                subsearch_amplitude(sample_i) = range(subsearch_velocity);
-            end
-            
-            [~, I] = min(err);
-            
-            % sort the errors
-            [~, sort_idx] = sort(err, 'ascend');
-            % sort the amplitudes of the 
-            subsearch_amplitude_sorted = subsearch_amplitude(sort_idx);
-            
-            % find the first index at which amplitude is larger than
-            % template, with minimum error
-            I = find(subsearch_amplitude_sorted > template_amplitude, 1);
-            
-            % if there is no such index
-            if isempty(I)
-                % just take the minimum index of err
-                [~, I] = min(err);
-            else
-                % take the minimum index of err
-                I = sort_idx(I);
-            end
-            
-%             matched_idx = I + (-first_sample_to_compare+1:n_samples_after_match-1);
-%             matched_idx(matched_idx < 1) = 1;
-            
-            % I is the index in err with minimum distance between template
-            % and search velocities
-            %   the first point of 'err' is at 'n_samples_before_match_to_show'
-            %   of trial(x).velocities
-            %   so if I = 1, then we want to take from
-            %       1 of the original velocity trace up through size of
-            %       display_running
-            matched_idx = I + (0:size(display_running, 1)-1);
-            matched_idx(matched_idx < 1) = 1;
-            
             store_running_mm = [store_running_mm, display_running(:, trial_i)];
-            store_running_matched = [store_running_matched, trials(trial_i).velocity(matched_idx)];
-            store_details = [store_details; probe_i, trial_i];
             
-            
-            
-            n_samples = range(display_window) * trials(1).fs;
-            common_t = display_window(1) + (0:n_samples-1)*(1/trials(trial_i).fs);
             matched_t = trials(trial_i).probe_t(I + n_samples_before_match_to_show);
-            time_base = common_t + matched_t;
-            
-            for cluster_i = 1 : length(clusters)
-                matched_spike_rate{cluster_i}(:, end+1) = cluster_fr(cluster_i).get_convolution(time_base);
-            end
             
             include_trial(trial_i) = true;
         end
         
         
         for cluster_i = 1 : length(clusters)
-            store_spikes_mm = [store_spikes_mm, mean(mm_spike_rate{cluster_i}(:, include_trial), 2)];
-            store_spikes_matched = [store_spikes_matched, mean(matched_spike_rate{cluster_i}, 2)];
+            store_spikes_mm         = [store_spikes_mm, mean(mm_spike_rate{cluster_i}(:, include_trial), 2)];
+            store_spikes_matched    = [store_spikes_matched, mean(matched_spike_rate{cluster_i}, 2)];
         end
     end
 end

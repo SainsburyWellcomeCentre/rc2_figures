@@ -14,7 +14,7 @@ plot_array.ax_size_cm = 10;
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     clusters            = data.selected_clusters;
     
     exp_obj             = DarknessExperiment(data, config);

@@ -16,7 +16,7 @@ fname_suffix = {'MT', 'M'};
 for probe_i = 3 : length(probe_fnames)
     
     % all data for this probe recording
-    data = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     
     % get visual flow experiment object
     if strcmp(experiment, 'visual_flow')

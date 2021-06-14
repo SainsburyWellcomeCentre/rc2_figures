@@ -3,10 +3,10 @@ classdef MismatchExperiment < MVTExperiment
     
     properties (Constant = true)
         
-        protocol_ids = 1 : 4
-        protocol_type = {'CoupledMismatch', 'CoupledMismatch', 'EncoderOnlyMismatch', 'EncoderOnlyMismatch'};
-        protocol_gain = {'down', 'up', 'down', 'up'};
-        protocol_label = {'MVT (gain down)', 'MVT (gain up)', 'MV (gain down)', 'MV (gain up)'};
+        protocol_ids = 1 : 6
+        protocol_type = {'CoupledMismatch', 'CoupledMismatch', 'EncoderOnlyMismatch', 'EncoderOnlyMismatch', 'CoupledMismatch', 'EncoderOnlyMismatch'};
+        protocol_gain = {'down', 'up', 'down', 'up', 'any', 'any'};
+        protocol_label = {'MVT (gain down)', 'MVT (gain up)', 'MV (gain down)', 'MV (gain up)', 'MVT', 'MV'};
     end
     
     
@@ -72,8 +72,49 @@ classdef MismatchExperiment < MVTExperiment
                 idx = strcmp({c(:).gain_direction}, 'up');
                 trials = trials(idx);
                 
+            elseif trial_type == 5
+                
+                trials = obj.coupledmismatch_trials();
+                
+            elseif trial_type == 6
+                
+                trials = obj.encoderonlymismatch_trials();
+                
             end
         end
+        
+        
+        
+        function trial = trial_by_id(obj, id)
+            
+            idx = [obj.trials(:).id] == id;
+            trial = obj.trials(idx);
+        end
+        
+        
+        
+        function val = label_from_id(obj, protocol_id)
+            
+            idx = obj.protocol_ids == protocol_id;
+            assert(sum(idx) == 1, 'No such protocol id: %i', protocol_id);
+            val = obj.protocol_label{idx};
+        end
+        
+        
+        
+        function idx = get_svm_table_index(obj, cluster_id, protocol_id)
+        %% Overwrite MVTExperiment method as it does not work for the mismatch protocol
+        %   need better design upstream
+        
+            trial_type = obj.protocol_type{obj.protocol_ids == protocol_id};
+            these_trials = obj.trials_of_type(protocol_id);
+            ids_for_these_trials = [these_trials(:).id];
+            
+            idx = obj.svm_table.cluster_id == cluster_id & ...
+                    obj.svm_table.protocol == trial_type & ...
+                    ismember(obj.svm_table.trial_id, ids_for_these_trials);
+        end
+        
         
         
         function [baseline, response, response_ctl] = windowed_mm_responses(obj, cluster, prot_i)
@@ -112,7 +153,7 @@ classdef MismatchExperiment < MVTExperiment
         
         
         
-        function [running, t] = running_around_mismatch(obj, prot_i, limits)
+        function [running, t] = running_around_mismatch_by_protocol(obj, prot_i, limits)
             
             trials = obj.trials_of_type(prot_i);
             
@@ -129,12 +170,12 @@ classdef MismatchExperiment < MVTExperiment
                 running(:, trial_i) = trials(trial_i).velocity(full_idx);
             end
             
-            t = limits(1) + (0:n_samples-1)*(1/trials(1).fs); 
+            t = limits(1) + (0:n_samples-1)*(1/trials(1).fs);
         end
         
         
         
-        function [spike_rate, t] = firing_around_mismatch(obj, cluster, prot_i, limits)
+        function [spike_rate, t] = firing_around_mismatch_by_protocol(obj, cluster, prot_i, limits)
             
             cluster_fr = FiringRate(cluster.spike_times);
             trials = obj.trials_of_type(prot_i);
@@ -153,6 +194,53 @@ classdef MismatchExperiment < MVTExperiment
                 
                 spike_rate(:, trial_i) = cluster_fr.get_convolution(t);
             end
+        end
+        
+        
+        
+        function [running, t] = running_around_mismatch(obj, trial_id, limits)
+            
+            trial = obj.trial_by_id(trial_id);
+            
+            n_samples = range(limits) * trial.fs;
+            
+            mm_onset = trial.mismatch_onset_t();
+            start_idx = find(trial.probe_t > mm_onset + limits(1), 1, 'first');
+            full_idx = start_idx + (0:n_samples-1);
+            running = trial.velocity(full_idx);
+            
+            t = limits(1) + (0:n_samples-1)*(1/trial.fs);
+        end
+        
+        
+        
+        function changed_down = trial_changed_velocity(obj, trial_id, window_1, window_2, n_sds)
+            
+            limits = [min(window_1), max(window_2)];
+            
+            [running, t] = running_around_mismatch(obj, trial_id, limits);
+            
+            % determine whether the trial has changed velocity after
+            % mismatch
+            baseline_idx = t > window_1(1) & t < window_1(2);
+            response_idx = t >= window_2(1) & t < window_2(2);
+            
+            m_before = mean(running(baseline_idx));
+            sd = std(running(baseline_idx));
+            
+            m_after = mean(running(response_idx));
+            
+            changed_down = m_after < m_before - n_sds*sd;
+        end
+        
+        
+        
+        function val = get_trial_protocol_id(obj, trial)
+            
+            idx_prot = strcmp(obj.protocol_type, trial.protocol);
+            idx_gain = strcmp(obj.protocol_gain, trial.config.gain_direction);
+            
+            val = obj.protocol_ids(idx_prot & idx_gain);
         end
     end
 end

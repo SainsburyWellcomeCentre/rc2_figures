@@ -29,6 +29,14 @@ classdef MVTExperiment < handle
         
         
         
+        function label = get_protocol_label(obj, protocol_id)
+            
+            idx = obj.protocol_ids == protocol_id;
+            label = obj.protocol_label{idx};
+        end
+        
+        
+        
         function trials = trials_of_type(obj, trial_type)
             
             if strcmp(trial_type, 'Coupled')
@@ -287,7 +295,7 @@ classdef MVTExperiment < handle
         
         function load_replay_offsets(obj)
             
-            csv_fname = fullfile(obj.config.summary_data, 'match_darkness_trials', sprintf('%s_trial_offset_match.csv', obj.probe_fname));
+            csv_fname = fullfile(obj.config.summary_data_dir, 'trial_matched_offsets', sprintf('%s_trial_offset_match.csv', obj.probe_fname));
             if exist(csv_fname, 'file')
                 obj.offset_table = readtable(csv_fname);
             end
@@ -310,9 +318,9 @@ classdef MVTExperiment < handle
         
         function load_stationary_vs_motion_table(obj)
             
-            csv_fname = fullfile(obj.config.summary_data, 'stationary_vs_motion_fr', sprintf('%s.csv', obj.probe_fname));
+            csv_fname = fullfile(obj.config.summary_data_dir, 'stationary_vs_motion_fr', sprintf('%s.csv', obj.probe_fname));
             if exist(csv_fname, 'file')
-                obj.svm_table = readtable(csv_fname);
+                obj.svm_table = readsvmtable(csv_fname);
             end
         end
         
@@ -320,7 +328,7 @@ classdef MVTExperiment < handle
         
         function load_tuning_table(obj)
             
-            mat_fname = fullfile(obj.config.summary_data, 'tuning_table', sprintf('%s.mat', obj.probe_fname));
+            mat_fname = fullfile(obj.config.summary_data_dir, 'tuning_table', sprintf('%s.mat', obj.probe_fname));
             if exist(mat_fname, 'file')
                 t = load(mat_fname);
                 obj.tt_table = t.tuning_table;
@@ -404,6 +412,34 @@ classdef MVTExperiment < handle
                 idx = obj.tt_table.cluster_id == cluster_id & ...
                     strcmp(obj.tt_table.protocol, trial_type) & ...
                     strcmp(obj.tt_table.replay_of, replayed_type);
+            end
+        end
+        
+        
+        
+        function all_bouts = motion_bouts_by_protocol(obj, protocol_id, include_200ms, use_aligned_data, min_bout_duration)
+            
+            VariableDefault('include_200ms', false);
+            VariableDefault('use_aligned_data', false);
+            
+            these_trials = obj.trials_of_type(protocol_id);
+            
+            
+            
+            all_bouts = [];
+            for trial_i = 1 : length(these_trials)
+                
+                if use_aligned_data
+                    this_trial = obj.to_aligned(these_trials(trial_i));
+                else
+                    this_trial = these_trials(trial_i);
+                end
+                
+                motion_bouts = this_trial.motion_bouts(include_200ms);
+                
+                if ~isempty(motion_bouts)
+                    all_bouts = [all_bouts, motion_bouts];
+                end
             end
         end
     end

@@ -54,7 +54,7 @@ end
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = config.load_formatted_data(probe_fnames{probe_i});
+    data                = load_formatted_data(probe_fnames{probe_i}, config);
     clusters            = data.VISp_clusters;
     
     exp_obj             = MismatchExperiment(data, config);
@@ -66,7 +66,7 @@ for probe_i = 1 : length(probe_fnames)
         n_trials = length(trials);
         
         % get running traces for each trial to display
-        [display_running, display_t] = exp_obj.running_around_mismatch(prot_i, display_window);
+        [display_running, display_t] = exp_obj.running_around_mismatch_by_protocol(prot_i, display_window);
         
         % make sure it's consistent
         assert(n_trials == size(display_running, 2), ...
@@ -79,7 +79,7 @@ for probe_i = 1 : length(probe_fnames)
         for cluster_i = 1 : length(clusters)
             
             % for this cluster, get the spike rate around the mismatch
-            mm_spike_rate{cluster_i} = exp_obj.firing_around_mismatch(clusters(cluster_i), prot_i, display_window);
+            mm_spike_rate{cluster_i} = exp_obj.firing_around_mismatch_by_protocol(clusters(cluster_i), prot_i, display_window);
             
             % make sure it is the same number of trials
             assert(n_trials == size(display_running, 2), ...

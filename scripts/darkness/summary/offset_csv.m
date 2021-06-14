@@ -18,7 +18,7 @@ trial_types = {'Coupled', 'EncoderOnly'};
 
 for probe_i = 1 : length(probe_fnames)
     
-    data = config.load_formatted_data(probe_fnames{probe_i});
+    data = load_formatted_data(probe_fnames{probe_i}, config);
     dark = DarknessExperiment(data, config);
     
     table_row = 0;
@@ -75,7 +75,7 @@ for probe_i = 1 : length(probe_fnames)
         end
     end
     
-    csv_fname = fullfile(config.summary_data, 'match_darkness_trials', sprintf('%s_trial_offset_match.csv', probe_fnames{probe_i}));
+    csv_fname = fullfile(config.summary_data_dir, 'match_darkness_trials', sprintf('%s_trial_offset_match.csv', probe_fnames{probe_i}));
     writetable(offset_table, csv_fname);
     
     figs.join_figs(sprintf('%s_trials_matched.pdf', probe_fnames{probe_i}))
