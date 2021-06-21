@@ -1,4 +1,4 @@
-function population_paired(experiment, spiking_class)
+function population_paired(data, experiment, spiking_class)
 %%
 
 config                  = RC2AnalysisConfig();
@@ -40,6 +40,8 @@ end
 cluster_id              = cell(length(protocol_labels), 1);
 probe_name              = cell(length(protocol_labels), 1);
 protocol_id             = cell(length(protocol_labels), 1);
+store_spiking_class     = cell(length(protocol_labels), 1);
+
 
 x_all                   = cell(length(protocol_labels), 1);
 y_all                   = cell(length(protocol_labels), 1);
@@ -49,26 +51,27 @@ p_all                   = cell(length(protocol_labels), 1);
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = load_formatted_data(probe_fnames{probe_i}, config);
-    clusters            = data.VISp_clusters([], spiking_class);
+%     data                = load_formatted_data(probe_fnames{probe_i}, config);
+    this_data           = get_data_for_recording_id(data, probe_fnames{probe_i});
+    clusters            = this_data.VISp_clusters([], spiking_class);
     
     if isempty(clusters)
         continue
     end
     
     if strcmp(experiment, 'visual_flow')
-        exp_obj         = VisualFlowExperiment(data, config);
+        exp_obj         = VisualFlowExperiment(this_data, config);
     elseif strcmp(experiment, 'darkness')
-        exp_obj         = DarknessExperiment(data, config);
+        exp_obj         = DarknessExperiment(this_data, config);
     elseif strcmp(experiment, 'passive')
-        exp_obj         = PassiveExperiment(data, config);
+        exp_obj         = PassiveExperiment(this_data, config);
     elseif strcmp(experiment, 'head_tilt')
-        exp_obj         = HeadTiltExperiment(data, config);
+        exp_obj         = HeadTiltExperiment(this_data, config);
     elseif strcmp(experiment, 'mismatch_nov20')
-        exp_obj         = MismatchExperiment(data, config);
+        exp_obj         = MismatchExperiment(this_data, config);
     elseif strcmp(experiment, 'mismatch_nov20+visual_flow')
-        exp_obj         = get_experiment(data, config);
-        if strcmp(data.experiment_type, 'visual_flow')
+        exp_obj         = get_experiment(this_data, config);
+        if strcmp(this_data.experiment_type, 'visual_flow')
             protocols = [1, 2];
         else
             protocols = [2, 4];
@@ -86,6 +89,9 @@ for probe_i = 1 : length(probe_fnames)
             probe_name{prot_i}{end+1, 1} = probe_fnames{probe_i};
             protocol_id{prot_i}(end+1, 1) = protocols(prot_i);
             cluster_id{prot_i}(end+1, 1) = clusters(cluster_i).id;
+            
+            clust_obj = Cluster(clusters(cluster_i));
+            store_spiking_class{prot_i}{end+1} = clust_obj.spiking_class;
             
             [x_all{prot_i}(end+1, 1), ...
              y_all{prot_i}(end+1, 1), ...
@@ -141,3 +147,40 @@ end
 
 FigureTitle(h_fig, 'population, motion vs. stationary');
 figs.save_fig('population_motion_vs_stationary.pdf');
+
+
+
+%% color by cell class
+h_fig                   = figs.a4figure();
+plot_array              = PlotArray(3, 2);
+u                       = UnityPlotPopulation.empty();
+
+for prot_i = 1 : length(protocols)
+    
+    pos         = plot_array.get_position(prot_i);
+    h_ax        = axes('units', 'centimeters', 'position', pos);
+    hold on;
+    
+    narrow_idx = strcmp(store_spiking_class{prot_i}, 'FS');
+    wide_idx = ~narrow_idx;
+    
+    fprintf('%i narrow spiking cells, %i wide spiking cells\n', ...
+        sum(narrow_idx), ...
+        sum(wide_idx));
+    
+    scatter(h_ax, x_all{prot_i}(wide_idx), y_all{prot_i}(wide_idx), scatterball_size(1), 'k', 'fill');
+    scatter(h_ax, x_all{prot_i}(narrow_idx), y_all{prot_i}(narrow_idx), scatterball_size(1), [0.5, 0.5, 0.5], 'fill');
+    
+    line([m, M], [m, M], 'color', 'k', 'linestyle', '--');
+    
+    set(h_ax, 'xlim', [m, M], 'ylim', [m, M]);
+    set(h_ax, 'xtick', 0:20:60, 'ytick', 0:20:60, 'fontsize', 8);
+    
+    xlabel('Stationary (Hz)');
+    ylabel('Motion (Hz)');
+    
+    title(protocol_labels{prot_i});
+end
+
+FigureTitle(h_fig, 'population, motion vs. stationary, spiking class');
+figs.save_fig('population_motion_vs_stationary_spiking_class.pdf');

@@ -8,8 +8,8 @@ data = DataController(data, config);
 
 
 
-function exp_type = get_experiment_type(probe_recording, config)
+function exp_type = get_experiment_type(session_id, config)
 
-rec_table = readtable(fullfile(config.local_data_dir, 'session_list.csv'));
-idx = strcmp(rec_table.recording_id, probe_recording);
+rec_table = readtable(fullfile(config.local_data_dir, 'summary_data', 'session_list.csv'));
+idx = strcmp(rec_table.session_id, session_id);
 exp_type = rec_table.short_name{idx};

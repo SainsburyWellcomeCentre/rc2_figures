@@ -1,4 +1,4 @@
-function population_all_vs_all_paired(experiment, spiking_class)
+function population_all_vs_all_paired(data, experiment, spiking_class)
 
 config                  = RC2AnalysisConfig();
 
@@ -41,16 +41,18 @@ x_all                   = cell(length(protocol_labels));
 y_all                   = cell(length(protocol_labels));
 is_increase             = cell(length(protocol_labels));
 p_all                   = cell(length(protocol_labels));
+store_spiking_class     = cell(length(protocol_labels));
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = load_formatted_data(probe_fnames{probe_i}, config);
-    clusters            = data.VISp_clusters([], spiking_class);
+%     data                = load_formatted_data(probe_fnames{probe_i}, config);
+    this_data           = get_data_for_recording_id(data, probe_fnames{probe_i});
+    clusters            = this_data.VISp_clusters([], spiking_class);
     
     if strcmp(experiment, 'visual_flow')
-        exp_obj         = VisualFlowExperiment(data, config);
+        exp_obj         = VisualFlowExperiment(this_data, config);
     elseif strcmp(experiment, 'darkness')
-        exp_obj         = DarknessExperiment(data, config);
+        exp_obj         = DarknessExperiment(this_data, config);
         if any(strcmp(probe_fnames{probe_i}, {'CA_176_1_rec1_rec2_rec3', 'CA_176_3_rec1_rec2_rec3'}))
             protocols           = DarknessExperiment.protocol_ids(1:3);
             protocol_labels     = DarknessExperiment.protocol_label(1:3);
@@ -59,10 +61,10 @@ for probe_i = 1 : length(probe_fnames)
             protocol_labels     = DarknessExperiment.protocol_label([1:2, 4]);
         end
     elseif strcmp(experiment, 'mismatch_nov20')
-        exp_obj         = MismatchExperiment(data, config);
+        exp_obj         = MismatchExperiment(this_data, config);
     elseif strcmp(experiment, 'mismatch_nov20+visual_flow')
-        exp_obj         = get_experiment(data, config);
-        if strcmp(data.experiment_type, 'visual_flow')
+        exp_obj         = get_experiment(this_data, config);
+        if strcmp(this_data.experiment_type, 'visual_flow')
             protocols = [1, 2];
         else
             protocols = [2, 4];
@@ -78,7 +80,7 @@ for probe_i = 1 : length(probe_fnames)
                 x           = exp_obj.trial_motion_fr(clusters(cluster_i).id, protocols(prot_x));
                 y           = exp_obj.trial_motion_fr(clusters(cluster_i).id, protocols(prot_y));
                 
-                if strcmp(data.experiment_type, 'mismatch_nov20')
+                if strcmp(this_data.experiment_type, 'mismatch_nov20')
                     x = x(1:10);
                     y = y(1:10);
                 end
@@ -88,6 +90,7 @@ for probe_i = 1 : length(probe_fnames)
                 protocol_x_id{prot_y, prot_x}(end+1, 1) = protocols(prot_x);
                 protocol_y_id{prot_y, prot_x}(end+1, 1) = protocols(prot_y);
                 cluster_id{prot_y, prot_x}(end+1, 1) = clusters(cluster_i).id;
+                store_spiking_class{prot_y, prot_x}(end+1, 1) = clusters(cluster_i).duration < 0.45;
                 
                 [x_all{prot_y, prot_x}(end+1, 1), ...
                     y_all{prot_y, prot_x}(end+1, 1), ...
@@ -155,3 +158,40 @@ end
 
 FigureTitle(h_fig, 'population, all vs. all');
 figs.save_fig('population_all_vs_all.pdf');
+
+
+%%
+n_protocols             = length(protocols);
+h_fig                   = figs.a4figure();
+plot_array              = PlotArray(n_protocols, n_protocols);
+u                       = UnityPlotPopulation.empty();
+
+for prot_y = 1 : n_protocols-1
+    for prot_x = prot_y+1 : n_protocols
+        
+        sp_idx      = (prot_y-1)*n_protocols + prot_x;
+        pos         = plot_array.get_position(sp_idx);
+        h_ax        = axes('units', 'centimeters', 'position', pos);
+        
+        narrow_idx = strcmp(store_spiking_class{prot_y, prot_x}, 'FS');
+        wide_idx = ~narrow_idx;
+        
+        fprintf('%i narrow spiking cells, %i wide spiking cells\n', ...
+            sum(narrow_idx), ...
+            sum(wide_idx));
+        
+        scatter(h_ax, x_all{prot_y, prot_x}(wide_idx), y_all{prot_y, prot_x}(wide_idx), scatterball_size(1), 'k', 'fill');
+        scatter(h_ax, x_all{prot_y, prot_x}(narrow_idx), y_all{prot_y, prot_x}(narrow_idx), scatterball_size(1), [0.5, 0.5, 0.5], 'fill');
+        
+        line([m, M], [m, M], 'color', 'k', 'linestyle', '--');
+        
+        set(h_ax, 'xlim', [m, M], 'ylim', [m, M]);
+        set(h_ax, 'xtick', 0:20:60, 'ytick', 0:20:60, 'fontsize', 8);
+        
+        xlabel(protocol_labels{prot_x});
+        ylabel(protocol_labels{prot_y});
+    end
+end
+
+FigureTitle(h_fig, 'population, all vs. all, spiking class');
+figs.save_fig('population_all_vs_all_spiking_class.pdf');

@@ -1,10 +1,8 @@
-clear all
-close all
+clearvars -except data
 
 % heatmaps showing transition from baseline to motion for all conditions
-
-experiment      = 'mismatch_nov20+visual_flow';
-spiking_class   = 'RS';
+experiment      = 'mismatch_nov20';
+spiking_class   = 'any';
 
 baseline_t      = [-0.4, 0];
 response_t      = [0, 0.4];
@@ -58,17 +56,18 @@ store_spiking_class   = cell(length(protocol_labels), 1);
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = load_formatted_data(probe_fnames{probe_i}, config);
-    clusters            = data.VISp_clusters([], spiking_class);
+%     data                = load_formatted_data(probe_fnames{probe_i}, config);
+    this_data           = get_data_for_recording_id(data, probe_fnames{probe_i});
+    clusters            = this_data.VISp_clusters([], spiking_class);
     
     if isempty(clusters)
         continue
     end
     
-    exp_obj = get_experiment(data, config);
+    exp_obj = get_experiment(this_data, config);
     
     if strcmp(experiment, 'mismatch_nov20+visual_flow')
-        if strcmp(data.experiment_type, 'visual_flow')
+        if strcmp(this_data.experiment_type, 'visual_flow')
             protocol_ids = [1, 2];
         else
             protocol_ids = [2, 4];
@@ -249,3 +248,54 @@ for prot_i = 1 : length(protocol_ids)
 end
 
 figs.save_fig('motion_onset_population_average.pdf');
+
+
+
+
+%% population average by cell class
+
+h_fig                   = figs.a4figure();
+plot_array              = PlotArray(3, 2);
+
+n_clusters              = length(p_all{1});
+
+for prot_i = 1 : length(protocol_ids)
+    
+    pos         = plot_array.get_position(prot_i);
+    h_ax        = axes('units', 'centimeters', 'position', pos);
+    hold on
+    
+    narrow_idx = strcmp(store_spiking_class{prot_i}, 'FS');
+    wide_idx = ~narrow_idx;
+    
+    fprintf('%i narrow spiking cells, %i wide spiking cells\n', ...
+        sum(narrow_idx), ...
+        sum(wide_idx));
+    
+    narrow_population_average = mean(all_cluster_fr{prot_i}(:, narrow_idx), 2);
+    wide_population_average = mean(all_cluster_fr{prot_i}(:, wide_idx), 2);
+    
+    narrow_population_sem = std(all_cluster_fr{prot_i}(:, narrow_idx), [], 2) ./ ...
+                     sqrt(sum(~isnan(all_cluster_fr{prot_i}(:, narrow_idx)), 2));
+    wide_population_sem = std(all_cluster_fr{prot_i}(:, wide_idx), [], 2) ./ ...
+                     sqrt(sum(~isnan(all_cluster_fr{prot_i}(:, wide_idx)), 2));
+    
+    
+    plot(common_t, wide_population_average + wide_population_sem, 'color', 'k');
+    plot(common_t, wide_population_average - wide_population_sem, 'color', 'k');
+    plot(common_t, narrow_population_average + narrow_population_sem, 'color', [0.5, 0.5, 0.5]);
+    plot(common_t, narrow_population_average - narrow_population_sem, 'color', [0.5, 0.5, 0.5]);
+    
+    plot(common_t, wide_population_average, 'k');
+    plot(common_t, narrow_population_average, 'color', [0.5, 0.5, 0.5]);
+    
+    line([0, 0], get(gca, 'ylim'), 'linestyle', '--', 'color', 'k');
+    
+    ylabel('\Delta FR (Hz)')
+    xlabel('Time (s)');
+    
+    ylim([-3, 10]);
+    title(protocol_labels{prot_i});
+end
+
+figs.save_fig('motion_onset_population_average_cell_class.pdf');

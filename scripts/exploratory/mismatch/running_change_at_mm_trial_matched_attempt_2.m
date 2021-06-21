@@ -1,0 +1,303 @@
+% For each mismatch trial, takes the running speed around the mismatch and
+% looks for periods most similar to that running speed in the period before
+% the mismatch.
+
+% Second attempt:
+%   Allow the search for each mismatch period to be over ALL trials instead 
+%   of the same trial.
+
+clearvars -except data
+
+n_sds                   = 2;
+window_1                = [-0.15, 0.05];
+window_2                = [0.1, 0.3];
+display_window          = [-1, 1];
+protocol                = 2;
+
+
+
+%%
+config                  = RC2AnalysisConfig();
+
+figs                    = RC2Figures(config);
+figs.save_on            = true;
+figs.set_figure_subdir('mismatch', 'running_change_at_mm', 'trial_matched');
+
+recording_ids            = experiment_details('mismatch_nov20', 'protocol');
+
+store_running_mm        = [];
+store_running_matched   = [];
+store_spikes_mm         = [];
+store_spikes_matched    = [];
+
+fname = '1s';
+
+% average trace is a 1s long trace from -1 to 1s around mismatch onset
+load('avg_to_compare_1s.mat', 'avg_to_compare');
+
+% template velocity
+template_velocity = avg_to_compare(:);
+
+% the number of samples to compare on each window
+n_samples_to_compare = length(template_velocity);
+
+
+for rec_i = 1 : length(recording_ids)
+    
+    this_data           = get_data_for_recording_id(data, recording_ids{rec_i});
+    clusters            = this_data.VISp_clusters([], 'any');
+    
+    if isempty(clusters)
+        continue
+    end
+    
+    exp_obj             = MismatchExperiment(this_data, config);
+    
+    for prot_i = protocol
+        
+        % get trials for this protocol
+        trials = exp_obj.trials_of_type(prot_i);
+        n_trials = length(trials);
+        
+        % get running traces for each trial to display
+        [display_running, display_t] = exp_obj.running_around_mismatch_by_protocol(prot_i, display_window);
+        
+        n_samples = size(display_running, 1);
+        common_t = display_window(1) + (0:n_samples-1)*(1/10e3);
+        
+        % preallocate cell array for spike rates of each cluster
+        mm_spike_rate = cell(1, length(clusters));
+        matched_spike_rate = cell(1, length(clusters));
+        
+        for cluster_i = 1 : length(clusters)
+            
+            % for this cluster, get the spike rate around the mismatch
+            mm_spike_rate{cluster_i} = exp_obj.firing_around_mismatch_by_protocol(clusters(cluster_i), prot_i, display_window);
+            
+            % make sure it is the same number of trials
+            assert(n_trials == size(display_running, 2), ...
+                    'Size of spike matrix traces is not equal to number of trials');
+            
+            % get FiringRate object for later use in getting the firing
+            % rate traces
+            cluster_fr(cluster_i) = FiringRate(clusters(cluster_i).spike_times);
+        end
+        
+        n_samples_before_mismatch_to_show = find(display_t > 0, 1);
+        n_samples_after_mismatch_to_show = sum(display_t > 0);
+        
+        % search these trials (with translation)
+        trials_to_search = [exp_obj.trials_of_type(1), exp_obj.trials_of_type(2)];
+        
+        % store the data each loop
+        search_window_velocities = {};
+        search_window_timebase = {};
+        search_window_samples = {};
+        
+        % gather all running data for this mouse
+        for trial_i = 1 : length(trials_to_search)
+            
+            this_trial = trials_to_search(trial_i);
+            
+            mismatch_onset_time     = this_trial.mismatch_onset_t();
+            mismatch_onset_sample   = find(this_trial.probe_t > mismatch_onset_time, 1, 'first');
+            
+            analysis_window_mask    = this_trial.analysis_window();
+            
+            % we search between 
+            % 1. 'n_samples_before_mismatch_to_show' (as we will have to take this many samples before any match for display)
+            % 2. 'mismatch_onset_sample - n_samples_after_mismatch_to_show'
+            %   (as we have to show this many samples after a match before the true mismatch onset)
+            search_window_1_samples = (n_samples_before_mismatch_to_show + 1) : ...
+                                      mismatch_onset_sample - n_samples_after_mismatch_to_show;
+            
+            % we also search between 
+            % 1. 3s after mismatch onset
+            % 2. last sample point of the analysis window - n_samples_after_mismatch_to_show
+            search_window_2_samples = (mismatch_onset_sample + 3 * this_trial.fs) : ...
+                                      find(analysis_window_mask, 1, 'last') - n_samples_after_mismatch_to_show;
+            
+            % velocities
+            search_window_velocities{end+1} = this_trial.velocity(search_window_1_samples);
+            search_window_velocities{end+1} = this_trial.velocity(search_window_2_samples);
+            
+            % corresponding probe times
+            search_window_timebase{end+1} = this_trial.probe_t(search_window_1_samples);
+            search_window_timebase{end+1} = this_trial.probe_t(search_window_2_samples);
+            
+            % corresponding sample points
+            search_window_samples{end+1} = search_window_1_samples;
+            search_window_samples{end+1} = search_window_2_samples;
+        end
+        
+        
+        error_at_sample_point_of_search_window = cell(length(search_window_velocities), 1);
+        
+        % do the search
+        for search_i = 1 : length(search_window_velocities)
+            
+            % number of samples we have to search
+            n_samples_to_search = length(search_window_velocities{search_i}) - n_samples_to_compare + 1;
+            
+            % preallocate error
+            error_at_sample_point_of_search_window{search_i} = nan(n_samples_to_search, 1);
+            
+            for sample_i = 1 : n_samples_to_search
+                
+                velocity_to_compare = search_window_velocities{search_i}(sample_i + (0:n_samples_to_compare-1));
+                
+                error_at_sample_point_of_search_window{search_i}(sample_i) = sum((velocity_to_compare - template_velocity).^2);
+            end
+        end
+        
+         include_trial = false(1, n_trials);
+        
+        
+        for trial_i = 1 : n_trials
+            
+            % was there a change in velocity for this trial?
+            changed_down = exp_obj.trial_changed_velocity(trials(trial_i).id, window_1, window_2, n_sds);
+            
+            % skip trial if there was no change in velocity
+            if ~changed_down
+                continue
+            end
+            
+            store_running_mm = [store_running_mm, display_running(:, trial_i)];
+            include_trial(trial_i) = true;
+        end
+        
+        n_trials_to_take = sum(include_trial);
+        
+        min_error_in_search_window  = nan(1, length(err));
+        min_error_idx_in_search_window     = nan(1, length(err));
+        for search_i = 1 : length(err)
+            [a, b] = min(err{search_i});
+            if isempty(a)
+                min_error_in_search_window(search_i) = inf;
+                min_error_idx_in_search_window(search_i) = -1;
+            else
+                [min_error_in_search_window(search_i), min_error_idx_in_search_window(search_i)] = min(err{search_i});
+            end
+        end
+        
+        % sort these errors
+        [~, search_window_idx_sorted_by_error] = sort(min_error_in_search_window, 'ascend');
+        
+        % 
+        search_window_idx_sorted_by_error = search_window_idx_sorted_by_error(1:n_trials_to_take);
+        
+        trigger_t = nan(1, length(search_window_idx_sorted_by_error));
+        
+        for search_i = 1 : length(search_window_idx_sorted_by_error)
+            
+            cmd1 = sprintf('Search trial %i/%i\n', search_i, length(min_errors_to_take)); fprintf(cmd1);
+            
+            this_search_window_idx = search_window_idx_sorted_by_error(search_i);
+            this_search_window_timebase = err_t{this_search_window_idx};
+            sample_to_look_in_this_search_window = min_error_idx_in_search_window(this_search_window_idx);
+            
+            trigger_t(search_i) = this_search_window_timebase(sample_to_look_in_this_search_window);
+            
+            time_base = common_t + trigger_t(search_i);
+            
+            this_search_window_velocity = search_window_velocities{this_search_window_idx};
+            
+            samples_to_take = sample_to_look_in_this_search_window
+            vel = this_search_window_velocity(min_error_idx_in_search_window(min_errors_to_take(search_i)) - n_samples_before_mismatch_to_show + (0 : length(display_t)-1));
+            
+            store_running_matched = [store_running_matched, vel(:)];
+            
+            for cluster_i = 1 : length(clusters)
+                
+                cmd2 = sprintf('Cluster %i/%i\n', cluster_i, length(clusters)); fprintf(cmd2);
+                
+                matched_spike_rate{cluster_i}(:, end+1) = cluster_fr(cluster_i).get_convolution(time_base);
+                
+                fprintf(repmat('\b', 1, length(cmd2)));
+            end
+            
+            fprintf(repmat('\b', 1, length(cmd1)));
+        end
+       
+        
+        for cluster_i = 1 : length(clusters)
+            store_spikes_mm         = [store_spikes_mm, mean(mm_spike_rate{cluster_i}(:, include_trial), 2)];
+            store_spikes_matched    = [store_spikes_matched, mean(matched_spike_rate{cluster_i}, 2)];
+        end
+    end
+end
+
+
+
+
+%% PLOT AVERAGES
+yM = 60;
+
+h_fig                   = figs.a4figure();
+
+subplot(2, 2, 1)
+hold on
+
+plot(display_t, store_running_mm, 'color', [0.6, 0.6, 0.6]);
+plot(display_t, mean(store_running_mm, 2), 'k');
+ylim([0, yM]);
+xlim([-1, 1]);
+line([0, 0], [0, yM], 'color', 'k')
+text(0, yM, sprintf('n = %i', size(store_running_mm, 2)), 'verticalalignment', 'top', 'horizontalalignment', 'left');
+xlabel('Time from MM onset (s)')
+ylabel('Running (cm/s)')
+title('Mismatch trials');
+box off
+
+
+subplot(2, 2, 2)
+hold on
+plot(display_t, store_running_matched, 'color', [0.6, 0.6, 0.6]);
+plot(display_t, mean(store_running_matched, 2), 'k');
+ylim([0, yM]);
+line([0, 0], [0, yM], 'color', 'k')
+text(0, yM, sprintf('n = %i', size(store_running_matched, 2)), 'verticalalignment', 'top', 'horizontalalignment', 'left');
+title('Matched trials');
+box off
+
+
+yL = [-4, 6];
+bsl = display_t > -1 & display_t < 0;
+
+subplot(2, 2, 3)
+hold on
+
+m_rm = bsxfun(@minus, store_spikes_mm, mean(store_spikes_mm(bsl, :), 1));
+m = nanmean(m_rm, 2)';
+s = nanstd(m_rm, [], 2)'/sqrt(sum(~isnan(m_rm(1, :))));
+h = fill([display_t, display_t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], 'r');
+set(h, 'facealpha', 0.6);
+plot(display_t, m, 'r');
+ylim(yL);
+line([0, 0], yL, 'color', 'k');
+ylabel('\Delta Hz');
+title('Mismatch');
+box off
+
+
+subplot(2, 2, 4)
+hold on
+m_rm = bsxfun(@minus, store_spikes_matched, mean(store_spikes_matched(bsl, :), 1));
+m = nanmean(m_rm, 2)';
+s = nanstd(m_rm, [], 2)'/sqrt(sum(~isnan(m_rm(1, :))));
+h = fill([display_t, display_t(end:-1:1)], [m-s, m(end:-1:1)+s(end:-1:1)], 'r');
+set(h, 'facealpha', 0.6);
+plot(display_t, m, 'r');
+ylim(yL);
+line([0, 0], yL, 'color', 'k');
+title('Matched');
+box off
+
+FigureTitle(gcf, 'Average running speed around MM onset');
+figs.save_fig(sprintf('averages_with_spikes_%s.pdf', fname));
+
+
+
+
+

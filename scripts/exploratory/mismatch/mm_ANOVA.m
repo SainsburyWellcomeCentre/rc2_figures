@@ -13,7 +13,6 @@ probe_fnames            = experiment_details('mismatch_nov20', 'protocol');
 protocols               = MismatchExperiment.protocol_ids;
 protocol_labels         = MismatchExperiment.protocol_label;
 
-
 cluster_id              = cell(length(protocols), 1);
 probe_name              = cell(length(protocols), 1);
 protocol_id             = cell(length(protocols), 1);
@@ -21,11 +20,12 @@ protocol_id             = cell(length(protocols), 1);
 x_all                   = cell(length(protocols), 1);
 y_all                   = cell(length(protocols), 1);
 p_all                   = cell(length(protocols), 1);
-% pt_all                  = cell(length(protocols), 1);
 
 
 for probe_i = 1 : length(probe_fnames)
+    
     probe_i
+    
     data                = load_formatted_data(probe_fnames{probe_i}, config);
     mm                  = MismatchExperiment(data, config);
     clusters            = data.VISp_clusters;
