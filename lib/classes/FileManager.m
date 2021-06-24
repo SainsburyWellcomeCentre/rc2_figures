@@ -73,6 +73,15 @@ classdef FileManager < handle
         
         
         
+        function [fname, exists] = trigger_mat(obj, recording_id)
+            
+            dname = obj.imec0_ks2(recording_id);
+            fname = fullfile(dname, 'trigger.mat');
+            exists = isfile(fname);
+        end
+        
+        
+        
         function recording_ids = recording_id_from_animal_id(obj, animal_id)
             
             animal_dir = fullfile(obj.config.raw_probe_dir, animal_id);
@@ -81,10 +90,14 @@ classdef FileManager < handle
             contents = dir(animal_dir);
             
             % find the directories beginning with the animal name
-            idx = ~cellfun(@isempty, regexp({contents(:).name}, animal_id));
+            idx = find(~cellfun(@isempty, regexp({contents(:).name}, animal_id)));
             
-            % return these as a cell array
-            recording_ids = {contents(idx).name};
+            if ~isempty(regexp(contents(idx(1)).name, '.bin', 'once'))
+                recording_ids = regexprep({contents(idx).name}, '_g0.+', '');
+                recording_ids = unique(recording_ids);
+            else
+                recording_ids = {contents(idx).name};
+            end
         end
     end
     

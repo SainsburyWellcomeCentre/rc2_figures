@@ -57,6 +57,7 @@ for rec_i = 1 : length(recording_ids)
         
         % get trials for this protocol
         trials = exp_obj.trials_of_type(prot_i);
+        
         n_trials = length(trials);
         
         % get running traces for each trial to display
@@ -83,7 +84,7 @@ for rec_i = 1 : length(recording_ids)
             cluster_fr(cluster_i) = FiringRate(clusters(cluster_i).spike_times);
         end
         
-        n_samples_before_mismatch_to_show = find(display_t > 0, 1);
+        n_samples_before_mismatch_to_show = find(display_t > 0, 1); % -1
         n_samples_after_mismatch_to_show = sum(display_t > 0);
         
         % search these trials (with translation)
@@ -91,8 +92,9 @@ for rec_i = 1 : length(recording_ids)
         
         % store the data each loop
         search_window_velocities = {};
-        search_window_timebase = {};
-        search_window_samples = {};
+        search_window_probe_timebase = {};
+        search_window_trial_sample_points = {};
+        search_window_trial_number = [];
         
         % gather all running data for this mouse
         for trial_i = 1 : length(trials_to_search)
@@ -122,22 +124,39 @@ for rec_i = 1 : length(recording_ids)
             search_window_velocities{end+1} = this_trial.velocity(search_window_2_samples);
             
             % corresponding probe times
-            search_window_timebase{end+1} = this_trial.probe_t(search_window_1_samples);
-            search_window_timebase{end+1} = this_trial.probe_t(search_window_2_samples);
+            search_window_probe_timebase{end+1} = this_trial.probe_t(search_window_1_samples);
+            search_window_probe_timebase{end+1} = this_trial.probe_t(search_window_2_samples);
             
             % corresponding sample points
-            search_window_samples{end+1} = search_window_1_samples;
-            search_window_samples{end+1} = search_window_2_samples;
+            search_window_trial_sample_points{end+1} = search_window_1_samples;
+            search_window_trial_sample_points{end+1} = search_window_2_samples;
+            
+            % trial # from which window comes
+            search_window_trial_number(end+1) = trial_i;
+            search_window_trial_number(end+1) = trial_i;
         end
         
+        % only take search_windows with samples more than the number of
+        % samples to compare
+        invalid_search_window_mask = cellfun(@(x)(length(x) < n_samples_to_compare), search_window_velocities);
+        search_window_velocities(invalid_search_window_mask) = [];
+        search_window_probe_timebase(invalid_search_window_mask) = [];
+        search_window_trial_sample_points(invalid_search_window_mask) = [];
+        search_window_trial_number(invalid_search_window_mask) = [];
         
-        error_at_sample_point_of_search_window = cell(length(search_window_velocities), 1);
+        % number of search windows
+        n_search_windows = length(search_window_velocities);
+        
+        error_at_sample_point_of_search_window = cell(n_search_windows, 1);
         
         % do the search
-        for search_i = 1 : length(search_window_velocities)
+        for search_i = 1 : n_search_windows
+            
+            %
+            n_samples_in_search_window = length(search_window_velocities{search_i});
             
             % number of samples we have to search
-            n_samples_to_search = length(search_window_velocities{search_i}) - n_samples_to_compare + 1;
+            n_samples_to_search = n_samples_in_search_window - n_samples_to_compare + 1;
             
             % preallocate error
             error_at_sample_point_of_search_window{search_i} = nan(n_samples_to_search, 1);
@@ -150,78 +169,77 @@ for rec_i = 1 : length(recording_ids)
             end
         end
         
-         include_trial = false(1, n_trials);
         
+        include_trial = false(1, n_trials);
         
         for trial_i = 1 : n_trials
             
             % was there a change in velocity for this trial?
-            changed_down = exp_obj.trial_changed_velocity(trials(trial_i).id, window_1, window_2, n_sds);
+            include_trial(trial_i) = exp_obj.trial_changed_velocity(trials(trial_i).id, window_1, window_2, n_sds);
             
             % skip trial if there was no change in velocity
-            if ~changed_down
-                continue
+            if include_trial(trial_i)
+                store_running_mm = [store_running_mm, display_running(:, trial_i)];
             end
-            
-            store_running_mm = [store_running_mm, display_running(:, trial_i)];
-            include_trial(trial_i) = true;
         end
         
-        n_trials_to_take = sum(include_trial);
+        n_trials_to_match = sum(include_trial);
         
-        min_error_in_search_window  = nan(1, length(err));
-        min_error_idx_in_search_window     = nan(1, length(err));
+        min_error_in_search_window          = nan(1, n_search_windows);
+        search_window_location_of_min_error = nan(1, n_search_windows);
+        
         for search_i = 1 : length(err)
-            [a, b] = min(err{search_i});
-            if isempty(a)
-                min_error_in_search_window(search_i) = inf;
-                min_error_idx_in_search_window(search_i) = -1;
-            else
-                [min_error_in_search_window(search_i), min_error_idx_in_search_window(search_i)] = min(err{search_i});
-            end
+            
+            [min_error_in_search_window(search_i), search_window_location_of_min_error(search_i)] = ...
+                min(error_at_sample_point_of_search_window{search_i});
         end
         
         % sort these errors
         [~, search_window_idx_sorted_by_error] = sort(min_error_in_search_window, 'ascend');
         
-        % 
-        search_window_idx_sorted_by_error = search_window_idx_sorted_by_error(1:n_trials_to_take);
+        % which search windows to take
+        search_window_idx_sorted_by_error = search_window_idx_sorted_by_error(1:n_trials_to_match);
         
-        trigger_t = nan(1, length(search_window_idx_sorted_by_error));
         
-        for search_i = 1 : length(search_window_idx_sorted_by_error)
+        for search_i = 1 : n_trials_to_match
             
-            cmd1 = sprintf('Search trial %i/%i\n', search_i, length(min_errors_to_take)); fprintf(cmd1);
+            fprintf(' Search trial %i/%i\n', search_i, n_trials_to_match);
             
-            this_search_window_idx = search_window_idx_sorted_by_error(search_i);
-            this_search_window_timebase = err_t{this_search_window_idx};
-            sample_to_look_in_this_search_window = min_error_idx_in_search_window(this_search_window_idx);
+            % 
+            this_search_window_idx                  = search_window_idx_sorted_by_error(search_i);
             
-            trigger_t(search_i) = this_search_window_timebase(sample_to_look_in_this_search_window);
             
-            time_base = common_t + trigger_t(search_i);
+            this_search_window_velocity             = search_window_velocities{this_search_window_idx};
+            this_search_window_probe_timebase       = search_window_probe_timebase{this_search_window_idx};
+            this_search_window_trial_sample_points  = search_window_trial_sample_points{this_search_window_idx};
+            this_trial                              = trials_to_search(search_window_trial_number(this_search_window_idx));
             
-            this_search_window_velocity = search_window_velocities{this_search_window_idx};
+            sample_to_look_in_this_search_window = search_window_location_of_min_error(this_search_window_idx);
             
-            samples_to_take = sample_to_look_in_this_search_window
-            vel = this_search_window_velocity(min_error_idx_in_search_window(min_errors_to_take(search_i)) - n_samples_before_mismatch_to_show + (0 : length(display_t)-1));
+            
+            
+            trial_sample_point_starting_at_match = ...
+                this_search_window_trial_sample_points(sample_to_look_in_this_search_window);
+            
+            trial_sample_points_to_take_for_velocity = ...
+                trial_sample_point_starting_at_match - n_samples_before_mismatch_to_show + (0 : length(display_t)-1);
+            
+            vel = this_trial.velocity(trial_sample_points_to_take_for_velocity);
             
             store_running_matched = [store_running_matched, vel(:)];
             
+            time_base = common_t + this_search_window_probe_timebase(sample_to_look_in_this_search_window);
+            
             for cluster_i = 1 : length(clusters)
                 
-                cmd2 = sprintf('Cluster %i/%i\n', cluster_i, length(clusters)); fprintf(cmd2);
-                
+                fprintf('  Cluster %i/%i\n', cluster_i, length(clusters));
                 matched_spike_rate{cluster_i}(:, end+1) = cluster_fr(cluster_i).get_convolution(time_base);
-                
-                fprintf(repmat('\b', 1, length(cmd2)));
             end
-            
-            fprintf(repmat('\b', 1, length(cmd1)));
         end
        
         
         for cluster_i = 1 : length(clusters)
+            
             store_spikes_mm         = [store_spikes_mm, mean(mm_spike_rate{cluster_i}(:, include_trial), 2)];
             store_spikes_matched    = [store_spikes_matched, mean(matched_spike_rate{cluster_i}, 2)];
         end
