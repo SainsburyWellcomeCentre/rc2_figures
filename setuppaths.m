@@ -1,3 +1,3 @@
-addpath(genpath('C:\Users\Lee\Documents\mvelez\rc2_scripts'));
-addpath(genpath('C:\Users\Lee\Documents\MATLAB\npy-matlab'));
-addpath(genpath('C:\Users\Lee\Documents\MATLAB\pdf'));
+addpath(genpath('C:\Users\lee\Documents\mvelez\rc2_scripts'));
+addpath(genpath('C:\Users\lee\Documents\MATLAB\npy-matlab'));
+addpath(genpath('C:\Users\lee\Documents\MATLAB\pdf'));

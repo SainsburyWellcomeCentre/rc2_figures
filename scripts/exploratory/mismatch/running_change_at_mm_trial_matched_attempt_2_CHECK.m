@@ -6,6 +6,10 @@
 %   Allow the search for each mismatch period to be over ALL trials instead 
 %   of the same trial (then take the # trials to compare best matches)
 
+% This script checks the main script by allowing the search to include the
+% mismatch period (error should be 0) and this should recover the exact
+% shape.
+
 clearvars -except data
 
 n_sds                   = 2;
@@ -61,15 +65,15 @@ for rec_i = 1 : length(recording_ids)
     for prot_i = protocol
         
         % get trials for this protocol
-        trials = exp_obj.trials_of_type(prot_i);
+        trials_in_protocol = exp_obj.trials_of_type(prot_i);
+        n_trials_in_protocol = length(trials_in_protocol);
         
-        n_trials = length(trials);
         
         % get running traces for each trial to display
-        [display_running, display_t] = exp_obj.running_around_mismatch_by_protocol(prot_i, display_window);
+        [running_traces_around_mismatch_for_protocol, display_t] = exp_obj.running_around_mismatch_by_protocol(prot_i, display_window);
         
-        n_samples = size(display_running, 1);
-        common_t = display_window(1) + (0:n_samples-1)*(1/10e3);
+        n_samples_to_display = length(display_t);
+        timebase_common_to_all_display_traces = display_window(1) + (0:n_samples_to_display-1)*(1/trials_in_protocol(1).fs);
         
         % preallocate cell array for spike rates of each cluster
         mm_spike_rate = cell(1, length(clusters));
@@ -80,8 +84,8 @@ for rec_i = 1 : length(recording_ids)
             % for this cluster, get the spike rate around the mismatch
             mm_spike_rate{cluster_i} = exp_obj.firing_around_mismatch_by_protocol(clusters(cluster_i), prot_i, display_window);
             
-            % make sure it is the same number of trials
-            assert(n_trials == size(display_running, 2), ...
+            % make sure it is the same number of trials_in_protocol
+            assert(n_trials_in_protocol == size(running_traces_around_mismatch_for_protocol, 2), ...
                     'Size of spike matrix traces is not equal to number of trials');
             
             % get FiringRate object for later use in getting the firing
@@ -100,6 +104,8 @@ for rec_i = 1 : length(recording_ids)
         search_window_probe_timebase = {};
         search_window_trial_sample_points = {};
         search_window_trial_number = [];
+        search_window_trial_number_id = [];
+        check_template_velocity = {};
         
         % gather all running data for this mouse
         for trial_i = 1 : length(trials_to_search)
@@ -116,7 +122,7 @@ for rec_i = 1 : length(recording_ids)
             % 2. 'mismatch_onset_sample - n_samples_after_mismatch_to_show'
             %   (as we have to show this many samples after a match before the true mismatch onset)
             search_window_1_samples = (n_samples_before_mismatch_to_show + 1) : ...
-                                      mismatch_onset_sample - n_samples_after_mismatch_to_show;
+                                      mismatch_onset_sample + n_samples_after_mismatch_to_show + 1000;
             
             % we also search between 
             % 1. 3s after mismatch onset
@@ -139,6 +145,26 @@ for rec_i = 1 : length(recording_ids)
             % trial # from which window comes
             search_window_trial_number(end+1) = trial_i;
             search_window_trial_number(end+1) = trial_i;
+            
+            search_window_trial_number_id(end+1) = trials_to_search(trial_i).id;
+            search_window_trial_number_id(end+1) = trials_to_search(trial_i).id;
+            
+            template_idx = mismatch_onset_sample - n_baseline_samples_in_avg_template + (0:n_samples_to_compare-1);
+            check_template_velocity{end+1} = this_trial.velocity(template_idx);
+            check_template_velocity{end+1} = this_trial.velocity(template_idx);
+        end
+        
+        include_trial = false(1, n_trials_in_protocol);
+        
+        for trial_i = 1 : n_trials_in_protocol
+            
+            % was there a change in velocity for this trial?
+            include_trial(trial_i) = exp_obj.trial_changed_velocity(trials_in_protocol(trial_i).id, window_1, window_2, n_sds);
+            
+            % skip trial if there was no change in velocity
+            if include_trial(trial_i)
+                store_running_mm = [store_running_mm, running_traces_around_mismatch_for_protocol(:, trial_i)];
+            end
         end
         
         % only take search_windows with samples more than the number of
@@ -148,13 +174,15 @@ for rec_i = 1 : length(recording_ids)
         search_window_probe_timebase(invalid_search_window_mask) = [];
         search_window_trial_sample_points(invalid_search_window_mask) = [];
         search_window_trial_number(invalid_search_window_mask) = [];
+        search_window_trial_number_id(invalid_search_window_mask) = [];
+        check_template_velocity(invalid_search_window_mask) = [];
         
         % number of search windows
         n_search_windows = length(search_window_velocities);
         
         error_at_sample_point_of_search_window = cell(n_search_windows, 1);
         
-        % do the search
+        % find corresponding window
         for search_i = 1 : n_search_windows
             
             %
@@ -165,35 +193,58 @@ for rec_i = 1 : length(recording_ids)
             
             % preallocate error
             error_at_sample_point_of_search_window{search_i} = nan(n_samples_to_search, 1);
+        end
+        
+        
+        % do the search
+        for trial_i = 1 : n_trials_in_protocol
             
-            fprintf('Doing the search... ');
-            for sample_i = 1 : n_samples_to_search
+            if include_trial(trial_i)
                 
-                if mod(sample_i, 2000) == 1
-                    str = sprintf('%i/%i', sample_i, n_samples_to_search);
-                    fprintf('%s\n', str);
+                trial_id = trials_in_protocol(trial_i).id;
+                
+                % find search windows for this trial
+                search_window_idx = find(search_window_trial_number_id == trial_id);
+                
+                % find corresponding window
+                for search_i = search_window_idx
+                    
+                    %
+                    n_samples_in_search_window = length(search_window_velocities{search_i});
+                    
+                    % number of samples we have to search
+                    n_samples_to_search = n_samples_in_search_window - n_samples_to_compare + 1;
+                    
+                    % preallocate error
+                    error_at_sample_point_of_search_window{search_i} = nan(n_samples_to_search, 1);
+                    
+                    if search_window_trial_number_id(search_i) ~= trial_id
+                        continue
+                    end
+                    
+                    fprintf('Doing the search... ');
+                    for sample_i = 1 : n_samples_to_search
+                        
+                        if mod(sample_i, 2000) == 1
+                            str = sprintf('%i/%i', sample_i, n_samples_to_search);
+                            fprintf('%s\n', str);
+                        end
+                        
+                        velocity_to_compare = search_window_velocities{search_i}(sample_i + (0:n_samples_to_compare-1));
+                        
+                        error_at_sample_point_of_search_window{search_i}(sample_i) = sum((velocity_to_compare - check_template_velocity{search_i}).^2);
+                    end
+                    fprintf('done\n');
                 end
                 
-                velocity_to_compare = search_window_velocities{search_i}(sample_i + (0:n_samples_to_compare-1));
-                
-                error_at_sample_point_of_search_window{search_i}(sample_i) = sum((velocity_to_compare - template_velocity).^2);
-            end
-            fprintf('done\n');
-        end
-        
-        
-        include_trial = false(1, n_trials);
-        
-        for trial_i = 1 : n_trials
-            
-            % was there a change in velocity for this trial?
-            include_trial(trial_i) = exp_obj.trial_changed_velocity(trials(trial_i).id, window_1, window_2, n_sds);
-            
-            % skip trial if there was no change in velocity
-            if include_trial(trial_i)
-                store_running_mm = [store_running_mm, display_running(:, trial_i)];
             end
         end
+        
+        
+        
+        
+        
+        
         
         n_trials_to_match = sum(include_trial);
         
@@ -241,7 +292,7 @@ for rec_i = 1 : length(recording_ids)
             
             store_running_matched = [store_running_matched, vel(:)];
             
-            time_base = common_t + this_search_window_probe_timebase(sample_to_look_in_this_search_window + n_baseline_samples_in_avg_template);
+            time_base = timebase_common_to_all_display_traces + this_search_window_probe_timebase(sample_to_look_in_this_search_window + n_baseline_samples_in_avg_template);
             
             for cluster_i = 1 : length(clusters)
                 
