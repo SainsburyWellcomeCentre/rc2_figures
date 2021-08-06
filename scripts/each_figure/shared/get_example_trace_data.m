@@ -5,7 +5,7 @@ this_data = get_data_for_recording_id(data, recording_id);
 idx = [this_data.data.sessions(session_n).trials(:).id] == trial_id;
 this_trial = this_data.data.sessions(session_n).trials(idx);
 
-bouts = this_trial.motion_bouts(true, false);
+bouts = this_trial.motion_bouts(true, true);
 
 idx_to_show = bouts(bout_n).start_idx+fs*padding(1):bouts(bout_n).end_idx+fs*padding(2);
 

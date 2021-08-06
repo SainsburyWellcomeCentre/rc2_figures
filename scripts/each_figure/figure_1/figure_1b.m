@@ -8,8 +8,8 @@ padding             = [-1, 1];
 fs                  = 10000;
 
 min_bout_duration   = 2;
-include_200ms       = false;
-real_motion         = false;
+include_200ms       = true;
+real_motion         = true;
 
 
 %%
