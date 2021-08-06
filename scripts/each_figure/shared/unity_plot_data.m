@@ -1,4 +1,4 @@
-function [x_med, y_med, p_val, change, info] = unity_plot_data(data, recording_ids, x_meta, y_meta, force_replication)
+function [x_med, y_med, p_val, change, info] = unity_plot_data(data, recording_ids, x_meta, y_meta, restrict_trials)
 
 csv_dir             = 'D:\mvelez\summary_data\stationary_vs_motion_fr';
 
@@ -20,11 +20,41 @@ for rec_i = 1 : length(recording_ids)
     for clust_i = 1 : length(clusters)
         
         
-        x = get_fr_vector(x_meta);
+        idx = svm_table.cluster_id == clusters(clust_i).id & svm_table.protocol == x_meta.protocol;
+        
+        if ~isempty(x_meta.replay_of)
+            
+            idx = idx & svm_table.replay_of == x_meta.replay_of;
+        end
+        
+        if ~isempty(x_meta.gain_dir)
+            
+            % get all trials for this recording
+            if strcmp(recording_ids{rec_i}, 'CAA-1112872_rec1_rec1b_rec2_rec3')
+                all_trials = [this_data.data.sessions(1).trials, this_data.data.sessions(2).trials];
+            else
+                all_trials = [this_data.data.sessions(1).trials];
+            end
+            
+            configs = [all_trials(:).config];
+            gain_up_trial_ids = [all_trials(strcmp({configs(:).gain_direction}, x_meta.gain_dir)).id];
+            idx = idx & ismember(svm_table.trial_id, gain_up_trial_ids);
+        end
+        
+        if x_meta.motion
+            x = svm_table.motion_firing_rate(idx);
+        else
+            x = svm_table.stationary_firing_rate(idx);
+        end
         
         idx = svm_table.cluster_id == clusters(clust_i).id & svm_table.protocol == y_meta.protocol;
         
-        if isfield(y_meta, 'gain_dir')
+        if ~isempty(y_meta.replay_of)
+            
+            idx = idx & svm_table.replay_of == x_meta.replay_of;
+        end
+        
+        if ~isempty(y_meta.gain_dir)
             % get all trials for this recording
             if strcmp(recording_ids{rec_i}, 'CAA-1112872_rec1_rec1b_rec2_rec3')
                 all_trials = [this_data.data.sessions(1).trials, this_data.data.sessions(2).trials];
@@ -46,7 +76,7 @@ for rec_i = 1 : length(recording_ids)
         
         cluster_count = cluster_count + 1;
         
-        if ~force_replication
+        if restrict_trials
             n_trials = min(length(x), 10);
             x = x(1:n_trials);
             y = y(1:n_trials);
@@ -102,27 +132,3 @@ for rec_i = 1 : length(recording_ids)
 end
 
 
-
-function v = get_fr_vector(cluster_id, meta, recording_id)
-
-idx = svm_table.cluster_id == cluster_id & svm_table.protocol == meta.protocol;
-
-if ~isempty(meta.gain_dir)
-    
-    % get all trials for this recording
-    if strcmp(r, 'CAA-1112872_rec1_rec1b_rec2_rec3')
-        all_trials = [this_data.data.sessions(1).trials, this_data.data.sessions(2).trials];
-    else
-        all_trials = [this_data.data.sessions(1).trials];
-    end
-    
-    configs = [all_trials(:).config];
-    gain_up_trial_ids = [all_trials(strcmp({configs(:).gain_direction}, x_meta.gain_dir)).id];
-    idx = idx & ismember(svm_table.trial_id, gain_up_trial_ids);
-end
-
-if x_meta.motion
-    x = svm_table.motion_firing_rate(idx);
-else
-    x = svm_table.stationary_firing_rate(idx);
-end

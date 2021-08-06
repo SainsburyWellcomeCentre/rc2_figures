@@ -6,30 +6,37 @@ if isempty(h_ax)
     hold on;
 end
 
-% replication
-restrict_trials     = false;
-account_for_cluster = true;
+% for replication with previous versions
+restrict_trials         = false;
+weird_cluster_remove    = true;
 
 
-%%
+
 recording_ids       = experiment_details('visual_flow');
-
 
 x_meta.protocol = 'ReplayOnly';
 x_meta.motion = false;
 x_meta.gain_dir = '';
-x_meta.replay_of = 'Coupled';
+if restrict_trials
+    x_meta.replay_of = 'Coupled';
+else
+    x_meta.replay_of = '';
+end
 
 y_meta.protocol = 'ReplayOnly';
 y_meta.motion = true;
-x_meta.gain_dir = '';
-y_meta.replay_of = 'Coupled';
-
-
+y_meta.gain_dir = '';
+if restrict_trials
+    y_meta.replay_of = 'Coupled';
+else
+    y_meta.replay_of = '';
+end
 
 [x_med, y_med, ~, change, info] = unity_plot_data(data, recording_ids, x_meta, y_meta, restrict_trials);
 
-if account_for_cluster
+
+
+if weird_cluster_remove
     zero_issue = [info(:).odd_zero_issue];
     change(zero_issue) = {'no_change'};
 end
