@@ -18,6 +18,14 @@ classdef SimpleVenn < RC2Axis
         d_B
         
         consistent
+        
+        all_col = 'k'
+        A_col = 'b'
+        B_col = 'r'
+        
+        h_all_patch
+        h_A_patch
+        h_B_patch
     end
     
     
@@ -71,7 +79,9 @@ classdef SimpleVenn < RC2Axis
                 obj.A + obj.B - obj.A_and_B <= obj.N;
         end
         
-        function plot(obj)
+        function plot(obj, suppress_text)
+            
+            VariableDefault('suppress_text', false);
             
             if ~obj.consistent
                 error('numbers are not consistent')
@@ -79,16 +89,15 @@ classdef SimpleVenn < RC2Axis
             
             t = 0:0.01:2*pi+0.01;
             
-            x_A = -obj.d_A + obj.radius_A*cos(t);
-            y_A = obj.radius_A*sin(t);
+            x_A = double(-obj.d_A + obj.radius_A*cos(t));
+            y_A = double(obj.radius_A*sin(t));
             
-            x_B = obj.d_B + obj.radius_B*cos(t);
-            y_B = obj.radius_B*sin(t);
+            x_B = double(obj.d_B + obj.radius_B*cos(t));
+            y_B = double(obj.radius_B*sin(t));
             
-            figure
-            hold on
-            plot(x_A, y_A, 'r');
-            plot(x_B, y_B, 'b');
+%             figure
+%             hold on
+            
             
 %             xl = get(gca, 'xlim');
 %             yl = get(gca, 'ylim');
@@ -109,22 +118,27 @@ classdef SimpleVenn < RC2Axis
 %             line(xl, Y([1, 1])/2, 'color', 'k');
 %             line(xl([1, 1]), [-Y/2, Y/2], 'color', 'k');
 %             line(xl([2, 2]), [-Y/2, Y/2], 'color', 'k');
-            axis off
+%             axis off
             
             pAB = ((obj.d_B + obj.radius_B) + (-obj.d_A - obj.radius_A))/2;
-            big_circle_x = pAB + sqrt(1/pi)*cos(t);
-            big_circle_y = sqrt(1/pi)*sin(t);
-            plot(big_circle_x, big_circle_y, 'k');
+            big_circle_x = double(pAB + sqrt(1/pi)*cos(t));
+            big_circle_y = double(sqrt(1/pi)*sin(t));
+            
+            obj.h_all_patch = patch(obj.h_ax, 'xdata', big_circle_x, 'ydata', big_circle_y, 'facecolor', obj.all_col);
+            obj.h_A_patch = patch(obj.h_ax, 'xdata', x_A, 'ydata', y_A, 'facecolor', obj.A_col);
+            obj.h_B_patch = patch(obj.h_ax, 'xdata', x_B, 'ydata', y_B, 'facecolor', obj.B_col);
             
             pA = ((obj.d_B - obj.radius_B) + (-obj.d_A - obj.radius_A))/2;
             pB = ((-obj.d_A + obj.radius_A) + (obj.d_B + obj.radius_B))/2;
             pAB = ((obj.d_B - obj.radius_B) + (-obj.d_A + obj.radius_A))/2;
             
-            text(pA, 0, sprintf('%s only = %i', obj.name_A, obj.A - obj.A_and_B), 'verticalalignment', 'middle', 'horizontalalignment', 'center');
-            text(pB, 0, sprintf('%s only = %i', obj.name_B, obj.B - obj.A_and_B), 'verticalalignment', 'middle', 'horizontalalignment', 'center');
-            text(pAB, 0, sprintf('%i', obj.A_and_B), 'verticalalignment', 'middle', 'horizontalalignment', 'center');
-%             text(xl(2), Y/2, sprintf('N = %i', obj.N), 'verticalalignment', 'top', 'horizontalalignment', 'right');
-            text(pAB, sqrt(1/pi), sprintf('N = %i', obj.N), 'verticalalignment', 'bottom', 'horizontalalignment', 'center');
+            if ~suppress_text
+                text(obj.h_ax, pA, 0, sprintf('%s only = %i', obj.name_A, obj.A - obj.A_and_B), 'verticalalignment', 'middle', 'horizontalalignment', 'center');
+                text(obj.h_ax, pB, 0, sprintf('%s only = %i', obj.name_B, obj.B - obj.A_and_B), 'verticalalignment', 'middle', 'horizontalalignment', 'center');
+                text(obj.h_ax, pAB, 0, sprintf('%i', obj.A_and_B), 'verticalalignment', 'middle', 'horizontalalignment', 'center');
+    %             text(xl(2), Y/2, sprintf('N = %i', obj.N), 'verticalalignment', 'top', 'horizontalalignment', 'right');
+                text(obj.h_ax, pAB, sqrt(1/pi), sprintf('N = %i', obj.N), 'verticalalignment', 'bottom', 'horizontalalignment', 'center');
+            end
         end
         
         
