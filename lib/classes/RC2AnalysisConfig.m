@@ -3,7 +3,7 @@ classdef RC2AnalysisConfig < handle
     properties
         
         figure_dir = 'C:\Users\Lee\Documents\mvelez\figures'
-        local_data_dir = 'E:\mvelez';
+        local_data_dir = 'D:\mvelez';
         formatted_data_dir
         summary_data_dir
     end

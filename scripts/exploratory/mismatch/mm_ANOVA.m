@@ -1,7 +1,7 @@
 config                  = RC2AnalysisConfig();
 
 figs                    = RC2Figures(config);
-figs.save_on            = true;
+figs.save_on            = false;
 figs.set_figure_subdir('mismatch_nov20', 'mm_ANOVA');
 
 csvs                    = CSVManager(config);
@@ -26,9 +26,10 @@ for probe_i = 1 : length(probe_fnames)
     
     probe_i
     
-    data                = load_formatted_data(probe_fnames{probe_i}, config);
-    mm                  = MismatchExperiment(data, config);
-    clusters            = data.VISp_clusters;
+%     data                = load_formatted_data(probe_fnames{probe_i}, config);
+    this_data           = get_data_for_recording_id(data, probe_fnames{probe_i});
+    mm                  = MismatchExperiment(this_data, config);
+    clusters            = this_data.VISp_clusters;
     
     for cluster_i = 1 : length(clusters)
         

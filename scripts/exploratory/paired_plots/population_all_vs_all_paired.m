@@ -84,7 +84,7 @@ for probe_i = 1 : length(probe_fnames)
                     x = x(1:10);
                     y = y(1:10);
                 end
-            
+                
                 % store the cluster
                 probe_name{prot_y, prot_x}{end+1, 1} = probe_fnames{probe_i};
                 protocol_x_id{prot_y, prot_x}(end+1, 1) = protocols(prot_x);

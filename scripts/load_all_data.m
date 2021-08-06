@@ -3,9 +3,9 @@ config          = config_rc2_analysis();
 loader          = Loader(config);
 
 recording_ids   = [];
-% recording_ids  = experiment_details('visual_flow', 'protocols');
+recording_ids  = experiment_details('visual_flow', 'protocols');
 recording_ids   = [recording_ids, experiment_details('mismatch_nov20', 'protocols')];
-% recording_ids  = [recording_ids, experiment_details('darkness', 'protocols')];
+recording_ids  = [recording_ids, experiment_details('darkness', 'protocols')];
 
 recording_id    = [];
 cluster_id      = [];

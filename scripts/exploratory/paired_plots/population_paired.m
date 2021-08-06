@@ -4,7 +4,7 @@ function population_paired(data, experiment, spiking_class)
 config                  = RC2AnalysisConfig();
 
 figs                    = RC2Figures(config);
-figs.save_on            = true;
+figs.save_on            = false;
 figs.set_figure_subdir(experiment, 'population_unity_plots', spiking_class);
 
 csvs                    = CSVManager(config);
@@ -85,6 +85,8 @@ for probe_i = 1 : length(probe_fnames)
             x           = exp_obj.trial_stationary_fr(clusters(cluster_i).id, protocols(prot_i));
             y           = exp_obj.trial_motion_fr(clusters(cluster_i).id, protocols(prot_i));
             
+            fprintf('%s: length, %i; n_nan: %i\n', probe_fnames{probe_i}, length(x), sum(isnan(x)));
+            
             % store the cluster
             probe_name{prot_i}{end+1, 1} = probe_fnames{probe_i};
             protocol_id{prot_i}(end+1, 1) = protocols(prot_i);
@@ -115,7 +117,7 @@ csvs.save('population_motion_vs_stationary');
 
 %%
 h_fig                   = figs.a4figure();
-plot_array              = PlotArray(3, 2);
+plot_array              = PlotArray(4, 2);
 u                       = UnityPlotPopulation.empty();
 
 for prot_i = 1 : length(protocols)

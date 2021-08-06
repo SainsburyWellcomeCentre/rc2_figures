@@ -1,5 +1,5 @@
 % plot overlap of running significant and translation signficant responses
-experiment              = 'darkness';
+experiment              = 'visual_flow';
 
 config                  = RC2AnalysisConfig();
 
@@ -26,13 +26,15 @@ p_all_stat_v_mot                   = cell(length(protocols), 1);
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = load_formatted_data(probe_fnames{probe_i}, config);
-    clusters            = data.VISp_clusters;
+%     data                = load_formatted_data(probe_fnames{probe_i}, config);
+    this_data           = get_data_for_recording_id(data, probe_fnames{probe_i});
+    
+    clusters            = this_data.VISp_clusters;
     
     if strcmp(experiment, 'visual_flow')
-        exp_obj         = VisualFlowExperiment(data, config);
+        exp_obj         = VisualFlowExperiment(this_data, config);
     elseif strcmp(experiment, 'darkness')
-        exp_obj         = DarknessExperiment(data, config);
+        exp_obj         = DarknessExperiment(this_data, config);
     end
     
     for prot_i = 1 : length(protocols)
@@ -55,8 +57,8 @@ end
 
 % overlap signficantly
 if strcmp(experiment, 'visual_flow')
-%     sig_and_MV_VT_overlap = p_all_stat_v_mot{2} < 0.05 & p_all_stat_v_mot{4} < 0.05;
-    sig_and_MV_VT_overlap = p_all{2, 6} < 0.05 & p_all{4, 6} < 0.05;
+    sig_and_MV_VT_overlap = p_all_stat_v_mot{2} < 0.05 & p_all_stat_v_mot{4} < 0.05;
+%     sig_and_MV_VT_overlap = p_all{2, 6} < 0.05 & p_all{4, 6} < 0.05;
 elseif strcmp(experiment, 'darkness') 
     sig_and_M_T_overlap = p_all_stat_v_mot{2} < 0.05 & p_all_stat_v_mot{3} < 0.05;
 end
@@ -79,13 +81,13 @@ p_all                   = cell(length(protocols));
 
 for probe_i = 1 : length(probe_fnames)
     
-    data                = load_formatted_data(probe_fnames{probe_i}, config);
-    clusters            = data.VISp_clusters;
+    this_data           = get_data_for_recording_id(data, probe_fnames{probe_i});
+    clusters            = this_data.VISp_clusters;
     
     if strcmp(experiment, 'visual_flow')
-        exp_obj         = VisualFlowExperiment(data, config);
+        exp_obj         = VisualFlowExperiment(this_data, config);
     elseif strcmp(experiment, 'darkness')
-        exp_obj         = DarknessExperiment(data, config);
+        exp_obj         = DarknessExperiment(this_data, config);
     end
     
     for prot_y = 1 : length(protocols)-1
@@ -111,11 +113,11 @@ end
 %% venn diagram
 if strcmp(experiment, 'visual_flow')
     
-    A = p_all{2, 6} < 0.05;
-    B = p_all{4, 6} < 0.05;
+%     A = p_all{2, 6} < 0.05;
+%     B = p_all{4, 6} < 0.05;
     
-%     A = p_all_stat_v_mot{2} < 0.05;
-%     B = p_all_stat_v_mot{4} < 0.05;
+    A = p_all_stat_v_mot{2} < 0.05;
+    B = p_all_stat_v_mot{4} < 0.05;
     
     figure
     h_ax = axes();

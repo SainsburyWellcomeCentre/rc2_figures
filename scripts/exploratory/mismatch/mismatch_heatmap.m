@@ -11,7 +11,7 @@ heatmap_padding = [-1, 1];
 config                  = config_rc2_analysis();
 
 figs                    = RC2Figures(config);
-figs.save_on            = true;
+figs.save_on            = false;
 figs.set_figure_subdir('mismatch_nov20', spiking_class);
 
 recording_ids           = experiment_details('mismatch_nov20');
@@ -45,6 +45,7 @@ for rec_i = 1 : length(recording_ids)
             response_magnitude{prot_i}(end+1, 1) = response;
             store_spiking_class{prot_i}(end+1, 1) = clusters(cluster_i).duration < 0.45;
         end
+        
     end
 end
 
