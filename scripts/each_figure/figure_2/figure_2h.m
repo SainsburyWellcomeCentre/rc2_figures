@@ -175,7 +175,7 @@ text(h_ax, 0, y_limits(2) + 0.05 * range(y_limits), 'R:VF+T', 'fontsize', 8, 'ho
 % axis for histogram
 original_axis_position = get(h_ax, 'position');
 
-layer_height_mm = 19576;
+layer_height_mm = 19.576;
 axis_to_layers_mm = 9.655;
 subaxis_height_mm = 2.883;
 subaxis_y_offset = 1.345;
