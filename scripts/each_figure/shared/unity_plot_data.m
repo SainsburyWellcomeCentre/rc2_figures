@@ -74,6 +74,10 @@ for rec_i = 1 : length(recording_ids)
         
         assert(length(x) == length(y));
         
+        if clust_i == 1
+            fprintf('# trials: %s, %i (nnan:%i)\n', recording_ids{rec_i}, sum(~isnan(x)), sum(isnan(x)));
+        end
+        
         cluster_count = cluster_count + 1;
         
         if restrict_trials

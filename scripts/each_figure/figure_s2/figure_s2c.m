@@ -8,8 +8,8 @@ end
 
 
 % for replication with previous versions
-restrict_trials         = false;
-weird_cluster_remove    = true;
+restrict_trials         = true;
+weird_cluster_remove    = false;
 
 
 
