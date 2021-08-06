@@ -1,16 +1,15 @@
-function figure_1a(data, h_ax)
+function figure_1i(data, h_ax)
 
 recording_id = 'CAA-1110264_rec1_rec2';
 session_n   = 1;
 cluster_id  = 209;
-trial_id    = 51;
-bout_n      = 2;
+trial_id    = 44;
+bout_n      = 1;
 padding     = [-3, 3];
 fs          = 10000;
 
 traces_to_plot = {'running', 'visual_flow', 'translation'};
 vertical_spacing = containers.Map({'translation', 'visual_flow', 'running'}, {30, 75, 120});
-
 
 
 %% Get data
