@@ -534,11 +534,12 @@ classdef Trial < handle
         
         
         
-        function bouts = motion_bouts(obj, include_200ms)
+        function bouts = motion_bouts(obj, include_200ms, true_motion_start)
         %% include_200ms - whether to include the first 200ms of the trial after the solenoid goes low
         %       by default this is false
         
             VariableDefault('include_200ms', false);
+            VariableDefault('true_motion_start', true);
             
             % split the motion mask into running bouts
             if include_200ms
@@ -549,13 +550,29 @@ classdef Trial < handle
             s = cellfun(@(x)(x(1)), cc.PixelIdxList);
             e = cellfun(@(x)(x(end)), cc.PixelIdxList);
             
-            % make sure the sample before is genuinely stationary and not
-            % just the start of an analysis window
-            stat_mask = obj.stationary_mask();
-            true_motion_start = stat_mask(s-1);
+%             if true_motion_start
+%                 % make sure the sample before is genuinely stationary and not
+%                 % just the start of an analysis window
+%                 stat_mask = obj.stationary_mask();
+%                 true_motion_start = stat_mask(s-1);
+%                 
+%                 s = s(true_motion_start);
+%                 e = e(true_motion_start);
+%             end
             
-            s = s(true_motion_start);
-            e = e(true_motion_start);
+            if true_motion_start
+                
+                if include_200ms
+                    analysis_window = obj.analysis_window(0);
+                else
+                    analysis_window = obj.analysis_window();
+                end
+                
+                starts_in_analysis_window = analysis_window(s-1);
+                s = s(starts_in_analysis_window);
+                e = e(starts_in_analysis_window);
+            end
+
             
             if isempty(s)
                 bouts = [];
