@@ -100,6 +100,8 @@ for rec_i = 1 : length(recording_ids)
         
         info(cluster_count).odd_zero_issue = false;
         
+        info(cluster_count).spike_class = clusters(clust_i).duration < 0.45;
+        
         % catch cases where medians are equal but there is a significant
         % difference between the groups
         if p_val(cluster_count) < 0.05
