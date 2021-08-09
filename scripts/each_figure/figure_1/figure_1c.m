@@ -1,4 +1,4 @@
-function figure_1c(data, h_ax_upper, h_ax_lower)
+function [heatmap, common_t, spike_class] = figure_1c(data, h_ax_upper, h_ax_lower)
 
 recording_ids       = experiment_details('mismatch_nov20');
 recording_ids       = [recording_ids, experiment_details('visual_flow')];
@@ -23,7 +23,7 @@ common_t            = linspace(padding(1), padding(2), n_sample_points);
 
 cluster_count       = 0;
 fr_mean             = [];
-
+spike_class         = []; % 0 for wide, 1 for narrow
 
 for rec_i = 1 : length(recording_ids)
     rec_i
@@ -72,6 +72,7 @@ for rec_i = 1 : length(recording_ids)
         cluster_count = cluster_count + 1;
         
         fr_mean(cluster_count, :) = mean(fr_conv, 2)';
+        spike_class(cluster_count) = clusters(clust_i).duration < 0.45;
     end
 end
 
@@ -87,7 +88,13 @@ delta_fr = response_fr - baseline_fr;
 [~, cluster_idx_sorted] = sort(delta_fr, 'ascend');
 
 heatmap = fr_mean(cluster_idx_sorted, :);
+spike_class = spike_class(cluster_idx_sorted);
+
 heatmap = bsxfun(@minus, heatmap, mean(heatmap(:, baseline_idx), 2));
+
+if strcmp(h_ax_upper, 'no_plot')
+    return
+end
 
 population_average = mean(heatmap, 1);
 population_sem = std(heatmap, [], 1) / sqrt(cluster_count);
