@@ -20,8 +20,8 @@ x_meta.gain_dir     = '';
 x_meta.replay_of    = '';
 
 y_meta.protocol     = 'Coupled';
-y_meta.gain_dir     = '';
 y_meta.motion       = true;
+y_meta.gain_dir     = '';
 y_meta.replay_of    = '';
 
 [x_med, y_med, ~, change, info] = unity_plot_data(data, recording_ids, x_meta, y_meta, restrict_trials);
