@@ -9,6 +9,6 @@ recording_ids  = get_recording_ids('visual_flow', ...
 for i = 1 : length(recording_ids)
     
     fprintf('Loading %s (%i/%i)\n', recording_ids{i}, i, length(recording_ids));
-    fname = fullfile(config.formatted_data_dir, recording_ids{i});
+    fname = fullfile(config.formatted_dir, recording_ids{i});
     data(i) = load(fname);
 end
