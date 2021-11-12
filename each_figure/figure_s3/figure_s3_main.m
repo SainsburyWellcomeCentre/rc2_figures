@@ -1,6 +1,5 @@
 function figure_s3_main(data)
 
-
 fig.h_fig = a4figure();
 
 label_positions = {'a', [40, 297 - 13, 0, 0];

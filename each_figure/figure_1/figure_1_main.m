@@ -38,10 +38,10 @@ tic; figure_1b(data, fig.h_ax('b_upper'), fig.h_ax('b_lower')); fprintf('1B took
 tic; figure_1c(data, fig.h_ax('c_upper'), fig.h_ax('c_lower')); fprintf('1C took: %.3f\n', toc);
 tic; figure_1d(data, fig.h_ax('d')); fprintf('1D took: %.3f\n', toc);
 tic; figure_1e(data, fig.h_ax('e')); fprintf('1E took: %.3f\n', toc);
-tic; figure_1f(data, fig.h_ax('f')); fprintf('1F took: %.3f\n', toc);
+tic; figure_1f(fig.h_ax('f')); fprintf('1F took: %.3f\n', toc);
 tic; figure_1g(data, fig.h_ax('g')); fprintf('1G took: %.3f\n', toc);
 tic; figure_1h(data, fig.h_ax('h')); fprintf('1H took: %.3f\n', toc);
 tic; figure_1i(data, fig.h_ax('i')); fprintf('1I took: %.3f\n', toc);
-tic; figure_1j(data, fig.h_ax('j')); fprintf('1J took: %.3f\n', toc);
+tic; figure_1j(fig.h_ax('j')); fprintf('1J took: %.3f\n', toc);
 tic; figure_1k(data, fig.h_ax('k')); fprintf('1K took: %.3f\n', toc);
 tic; figure_1l(data, fig.h_ax('l')); fprintf('1L took: %.3f\n', toc);

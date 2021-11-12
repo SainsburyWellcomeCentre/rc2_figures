@@ -1,11 +1,58 @@
 function figure_s3c(data, h_ax)
 
-[heatmap, common_t, spike_class] = figure_1c(data, 'no_plot');
+ctl = RC2Analysis();
 
-fr_limits       = [-8, 8];
+probe_ids           = ctl.get_probe_ids('visual_flow', 'mismatch_nov20', 'mismatch_jul21');
+trial_type_labels   = {'RVT', 'RVT_gain_up'};
 
-cluster_count   = size(heatmap, 1);
-padding = common_t([1, end]);
+fs                  = 10000;
+baseline_t          = [-0.4, 0];
+response_t          = [0, 0.4];
+
+% display
+padding             = [-1, 1];
+fr_limits           = [-8, 8];
+
+threshold_ms        = 0.45;
+
+bouts_options.min_bout_duration   = 2;
+bouts_options.include_200ms       = true;
+
+
+%% extract and analyze data
+fr_mean = [];
+spike_class = [];
+
+for ii = 1 : length(probe_ids)
+    
+    this_data = get_data_for_probe_id(data, probe_ids{ii});
+    clusters = this_data.VISp_clusters();
+
+    for jj = 1 : length(clusters)
+        
+        [fr_traces, common_t] = this_data.get_fr_responses(clusters(jj).id, trial_type_labels, 'motion', padding, fs, bouts_options);
+        fr_mean(end+1, :) = mean(fr_traces, 1);
+        spike_class(end+1) = clusters(jj).duration < threshold_ms;
+    end
+end
+
+n_clusters = size(fr_mean, 1);
+
+% reorder heatmap
+baseline_idx = common_t >= baseline_t(1) & common_t < baseline_t(2);
+response_idx = common_t >= response_t(1) & common_t < response_t(2);
+
+baseline_fr = mean(fr_mean(:, baseline_idx), 2);
+response_fr = mean(fr_mean(:, response_idx), 2);
+
+delta_fr = response_fr - baseline_fr;
+
+[~, cluster_idx_sorted] = sort(delta_fr, 'ascend');
+
+heatmap = fr_mean(cluster_idx_sorted, :);
+
+heatmap = bsxfun(@minus, heatmap, mean(heatmap(:, baseline_idx), 2));
+
 key_size = range(padding) * (0.1/2);
 
 
@@ -15,13 +62,13 @@ cols        = get_colours();
 h_im        = imagesc(h_ax, heatmap);
 set(h_im, 'xdata', common_t);
 
-line(h_ax, [0, 0], [0.5, cluster_count+0.5], 'linestyle', '--', 'color', 'k');
+line(h_ax, [0, 0], [0.5, n_clusters+0.5], 'linestyle', '--', 'color', 'k');
 colormap(h_ax, cols('red2blue_map'));
 
-set(h_ax, 'clim', fr_limits, 'ytick', [1, cluster_count], 'xlim', padding + [-key_size, 0], ...
-          'ylim', [0.5, cluster_count+0.5], 'xcolor', 'none', 'ycolor', 'none', 'yticklabel', [cluster_count, 1]);
+set(h_ax, 'clim', fr_limits, 'ytick', [1, n_clusters], 'xlim', padding + [-key_size, 0], ...
+          'ylim', [0.5, n_clusters+0.5], 'xcolor', 'none', 'ycolor', 'none', 'yticklabel', [n_clusters, 1]);
 
-for i = 1 : cluster_count
+for i = 1 : n_clusters
     
     if spike_class(i)
         col = [0.5, 0.5, 0.5];
@@ -33,13 +80,13 @@ for i = 1 : cluster_count
 end
 
 text_x_offset = padding(1) - range(padding) * (0.2/2);
-text_y_offset = cluster_count + (3/117)*cluster_count;
+text_y_offset = n_clusters + (3/117)*n_clusters;
 
-text(h_ax, text_x_offset, cluster_count, sprintf('%i', 1), 'horizontalalignment', 'right', 'verticalalignment', 'middle', ...
+text(h_ax, text_x_offset, n_clusters, sprintf('%i', 1), 'horizontalalignment', 'right', 'verticalalignment', 'middle', ...
     'fontsize', 8);
-text(h_ax, text_x_offset, 1, sprintf('%i', cluster_count), 'horizontalalignment', 'right', 'verticalalignment', 'middle', ...
+text(h_ax, text_x_offset, 1, sprintf('%i', n_clusters), 'horizontalalignment', 'right', 'verticalalignment', 'middle', ...
     'fontsize', 8);
-text(h_ax, text_x_offset, (cluster_count + 1) / 2, 'cell #', 'horizontalalignment', 'center', 'verticalalignment', 'bottom', ...
+text(h_ax, text_x_offset, (n_clusters + 1) / 2, 'cell #', 'horizontalalignment', 'center', 'verticalalignment', 'bottom', ...
     'fontsize', 8, 'rotation', 90);
 text(h_ax, 0, text_y_offset, {'locomotion', 'onset'}, 'horizontalalignment', 'center', 'verticalalignment', 'bottom', ...
     'fontsize', 6);

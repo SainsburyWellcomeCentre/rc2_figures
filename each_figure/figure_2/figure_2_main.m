@@ -34,13 +34,13 @@ axes_positions = {'a', [50, 297 - 56.672, 29, 29.171];
 fig.h_labels = setup_labels(fig.h_fig, label_positions);
 fig.h_ax = setup_axes(fig.h_fig, axes_positions);
 
-tic; figure_2a(data, fig.h_ax('a')); fprintf('2A took: %.3f\n', toc);
-tic; figure_2b(data, fig.h_ax('b1'), fig.h_ax('b2'), fig.h_ax('b3')); fprintf('2B took: %.3f\n', toc);
-tic; figure_2c(data, fig.h_ax('c1'), fig.h_ax('c2'), fig.h_ax('c3')); fprintf('2C took: %.3f\n', toc);
-tic; figure_2d(data, fig.h_ax('d')); fprintf('2D took: %.3f\n', toc);
-tic; figure_2e(data, fig.h_ax('e1'), fig.h_ax('e2'), fig.h_ax('e3')); fprintf('2E took: %.3f\n', toc);
-tic; figure_2f(data, fig.h_ax('f1'), fig.h_ax('f2'), fig.h_ax('f3')); fprintf('2F took: %.3f\n', toc);
-tic; figure_2g(data, fig.h_ax('g')); fprintf('2G took: %.3f\n', toc);
+% tic; figure_2a(data, fig.h_ax('a')); fprintf('2A took: %.3f\n', toc);
+% tic; figure_2b(data, fig.h_ax('b1'), fig.h_ax('b2'), fig.h_ax('b3')); fprintf('2B took: %.3f\n', toc);
+% tic; figure_2c(data, fig.h_ax('c1'), fig.h_ax('c2'), fig.h_ax('c3')); fprintf('2C took: %.3f\n', toc);
+% tic; figure_2d(data, fig.h_ax('d')); fprintf('2D took: %.3f\n', toc);
+% tic; figure_2e(data, fig.h_ax('e1'), fig.h_ax('e2'), fig.h_ax('e3')); fprintf('2E took: %.3f\n', toc);
+% tic; figure_2f(data, fig.h_ax('f1'), fig.h_ax('f2'), fig.h_ax('f3')); fprintf('2F took: %.3f\n', toc);
+% tic; figure_2g(data, fig.h_ax('g')); fprintf('2G took: %.3f\n', toc);
 tic; figure_2h(data, fig.h_ax('h')); fprintf('2H took: %.3f\n', toc);
 tic; figure_2i(data, fig.h_ax('i')); fprintf('2I took: %.3f\n', toc);
 

@@ -1,4 +1,4 @@
-function unity_plot_plot(h_ax, x_med, y_med, change, fmt)
+function unity_plot_plot(h_ax, x_med, y_med, direction, fmt)
 
 fontsize        = 8;
 linewidth       = 0.5;
@@ -20,18 +20,18 @@ end
 % add dots
 if strcmp(fmt.colour_by, 'significance')
     
-    idx = strcmp(change, 'no_change');
+    idx = direction == 0;
     scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(small_ball), cols('no_change'));
-    idx = strcmp(change, 'increase');
+    idx = direction == 1;
     scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('sig_increase'));
-    idx = strcmp(change, 'decrease');
+    idx = direction == -1;
     scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('sig_decrease'));
     
 elseif strcmp(fmt.colour_by, 'spike_class')
     
-    idx = change == 0;
+    idx = direction == 0;
     scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(small_ball), cols('wide_spiking'), 'fill');
-    idx = change == 1;
+    idx = direction == 1;
     scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('narrow_spiking'), 'fill');
 else
     error('color_by wrong')
@@ -63,8 +63,8 @@ ylabel(h_ax, fmt.ylabel, 'fontsize', fontsize);
 % put percentage increase and decrease
 if strcmp(fmt.colour_by, 'significance')
     
-    prc_increase = 100 * sum(strcmp(change, 'increase')) / length(change);
-    prc_decrease = 100 * sum(strcmp(change, 'decrease')) / length(change);
+    prc_increase = 100 * sum(direction == 1) / length(direction);
+    prc_decrease = 100 * sum(direction == -1) / length(direction);
     
     x_position = range(xy_limits)*(3/70);
     y_position = range(xy_limits)*(40/70);
@@ -128,18 +128,18 @@ if fmt.include_inset
     
     if strcmp(fmt.colour_by, 'significance')
         
-        idx = strcmp(change, 'no_change');
+        idx = direction == 0;
         scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(small_ball), cols('no_change'));
-        idx = strcmp(change, 'increase');
+        idx = direction == 1;
         scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('sig_increase'));
-        idx = strcmp(change, 'decrease');
+        idx = direction == -1;
         scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('sig_decrease'));
         
     elseif strcmp(fmt.colour_by, 'spike_class')
         
-        idx = change == 0;
+        idx = direction == 0;
         scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(small_ball), cols('wide_spiking'), 'fill');
-        idx = change == 1;
+        idx = direction == 1;
         scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('narrow_spiking'), 'fill');
     else
         error('color_by wrong')

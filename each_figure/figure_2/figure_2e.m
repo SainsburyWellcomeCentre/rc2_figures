@@ -1,50 +1,39 @@
 function figure_2e(data, h_ax1, h_ax2, h_ax3)
 
-recording_id        = 'CAA-1112874_rec1_rec2_rec3';
-session_n           = 1;
+probe_id            = 'CAA-1112874_rec1_rec2_rec3';
 cluster_id          = 187;
-protocol_type       = 'EncoderOnlyMismatch';
-gain_dir            = 'up';
-
+trial_group_label   = 'RV_gain_up';
 padding             = [-1, 1];
 fs                  = 10000;
 
 
 %% get trials
-this_data           = get_data_for_recording_id(data, recording_id);
-idx                 = strcmp({this_data.data.sessions(session_n).trials(:).protocol}, protocol_type);
-
-config              = [this_data.data.sessions(session_n).trials(:).config];
-idx_gain            = strcmp({config(:).gain_direction}, gain_dir);
-
-these_trials        = this_data.data.sessions(session_n).trials(idx & idx_gain);
+this_data           = get_data_for_probe_id(data, probe_id);
+these_trials        = this_data.get_trials_with_trial_group_label(trial_group_label);
 n_trials            = length(these_trials);
 
 % spike times
-idx                 = [this_data.data.clusters(:).id] == cluster_id;
-spike_times         = this_data.data.clusters(idx).spike_times;
-
+this_cluster        = this_data.get_cluster_with_id(cluster_id);
 
 mm_start_t = nan(1, n_trials);
-for i = 1 : n_trials
-    mm_start_t(i) = these_trials(i).mismatch_onset_t();
+for ii = 1 : n_trials
+    mm_start_t(ii) = these_trials{ii}.mismatch_onset_t();
 end
 
 
-n_sample_points = (padding(2) - padding(1)) * fs + 1;
-common_t = linspace(padding(1), padding(2), n_sample_points);
-fr = FiringRate(spike_times);
-
+common_t = this_data.timebase(padding, fs);
 mm_spike_times = cell(1, n_trials);
-fr_conv = nan(n_sample_points, n_trials);
+fr_conv = nan(length(common_t), n_trials);
 
-for i = 1 : n_trials
+for ii = 1 : n_trials
     
-    spike_idx = spike_times > (mm_start_t(i) + padding(1)) & ...
-                spike_times < (mm_start_t(i) + padding(2));
+    start_time = mm_start_t(ii);
+    
+    spike_idx = this_cluster.spike_times > (start_time + padding(1)) & ...
+                this_cluster.spike_times < (start_time + padding(2));
 
-    mm_spike_times{i} = spike_times(spike_idx) - mm_start_t(i);
-    fr_conv(:, i) = fr.get_convolution(mm_start_t(i) + common_t);
+    mm_spike_times{ii} = this_cluster.spike_times(spike_idx) - start_time;
+    fr_conv(:, ii) = this_cluster.fr.get_convolution(start_time + common_t);
 end
 
 fr_mean = mean(fr_conv, 2);

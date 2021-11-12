@@ -1,9 +1,8 @@
 function figure_1b(data, h_ax_up, h_ax_low)
 
-recording_id        = 'CAA-1110264_rec1_rec2';
-session_n           = 1;
+probe_id            = 'CAA-1110264_rec1_rec2';
 cluster_id          = 209;
-protocol_type       = 'Coupled';
+trial_group_label   = 'RVT';
 padding             = [-1, 1];
 fs                  = 10000;
 
@@ -13,40 +12,37 @@ real_motion         = true;
 
 
 %%
-this_data           = get_data_for_recording_id(data, recording_id);
-idx                 = strcmp({this_data.data.sessions(session_n).trials(:).protocol}, protocol_type);
-these_trials        = this_data.data.sessions(session_n).trials(idx);
+this_data           = get_data_for_probe_id(data, probe_id);
+these_trials        = this_data.get_trials_with_trial_group_label(trial_group_label);
 
-
-idx                 = [this_data.data.clusters(:).id] == cluster_id;
-spike_times         = this_data.data.clusters(idx).spike_times;
+this_cluster        = this_data.get_cluster_with_id(cluster_id);
 
 
 bouts = [];
 for trial_i = 1 : length(these_trials)
     
-    these_bouts = these_trials(trial_i).motion_bouts(include_200ms, real_motion);
+    these_bouts = these_trials{trial_i}.motion_bouts(include_200ms, real_motion);
     if isempty(these_bouts)
         continue
     end
-    these_bouts([these_bouts(:).duration] < min_bout_duration) = [];
+    remove_idx = cellfun(@(x)(x.duration < min_bout_duration), these_bouts);
+    these_bouts(remove_idx) = [];
     bouts = [bouts, these_bouts];
 end
 
-
-n_sample_points     = (padding(2) - padding(1)) * fs + 1;
-common_t            = linspace(padding(1), padding(2), n_sample_points);
+common_t            = this_data.timebase(padding, fs);
 bout_spike_times    = {};
-fr                  = FiringRate(spike_times);
 
-for bout_i = 1 : length(bouts)
+for ii = 1 : length(bouts)
     
-    spike_idx = spike_times > (bouts(bout_i).start_time + padding(1)) & ...
-                spike_times < (bouts(bout_i).start_time + padding(2));
+    start_time = bouts{ii}.start_time;
+    
+    spike_idx = this_cluster.spike_times > (start_time + padding(1)) & ...
+                this_cluster.spike_times < (start_time + padding(2));
 
-    bout_spike_times{bout_i} = spike_times(spike_idx) - bouts(bout_i).start_time;
+    bout_spike_times{ii} = this_cluster.spike_times(spike_idx) - start_time;
     
-    fr_conv(:, bout_i) = fr.get_convolution(bouts(bout_i).start_time + common_t);
+    fr_conv(:, ii) = this_cluster.fr.get_convolution(start_time + common_t);
 end
 
 fr_mean = mean(fr_conv, 2);

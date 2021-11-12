@@ -1,30 +1,32 @@
 function figure_s3d(data, h_ax)
 
-% for replication with previous versions
-restrict_trials         = false;
-weird_cluster_remove    = false;
+ctl                     = RC2Analysis();
+probe_ids               = ctl.get_probe_ids('visual_flow');
+x_trial_group_labels    = {'V_RVT', 'V_RV'};
+y_trial_group_labels    = {'VT_RVT', 'VT_RV'};
 
-recording_ids       = experiment_details('visual_flow');
+threshold_ms            = 0.45;
 
-x_meta.protocol     = 'ReplayOnly';
-x_meta.motion       = true;
-x_meta.gain_dir     = '';
-x_meta.replay_of    = '';
+c                       = 0;
+x_med                   = [];
+y_med                   = [];
+direction               = [];
+spike_class             = [];
 
-y_meta.protocol     = 'StageOnly';
-y_meta.motion       = true;
-y_meta.gain_dir     = '';
-y_meta.replay_of    = '';
-
-[x_med, y_med, ~, ~, info] = unity_plot_data(data, recording_ids, x_meta, y_meta, restrict_trials);
-
-
-if weird_cluster_remove
-    zero_issue = [info(:).odd_zero_issue];
-    change(zero_issue) = {'no_change'};
+for ii = 1 : length(probe_ids)
+    
+    this_data = get_data_for_probe_id(data, probe_ids{ii});
+    clusters = this_data.VISp_clusters();
+    
+    for jj = 1 : length(clusters)
+        
+        c = c + 1;
+        
+        [~, ~, direction(c), x_med(c), y_med(c)] = this_data.is_motion_vs_motion_significant(clusters(jj).id, x_trial_group_labels, y_trial_group_labels);
+        
+        spike_class(c) = clusters(jj).duration < threshold_ms;
+    end
 end
-
-spike_class = [info(:).spike_class];
 
 %% Plot
 
@@ -35,6 +37,5 @@ fmt.xlabel = 'FR VF (Hz)';
 fmt.ylabel = 'FR VF+T (Hz)';
 fmt.include_inset = true;
 fmt.colour_by = 'spike_class';
-
 
 unity_plot_plot(h_ax, x_med, y_med, spike_class, fmt);

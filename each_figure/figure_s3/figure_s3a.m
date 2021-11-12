@@ -1,16 +1,18 @@
 function figure_s3a(data, h_ax1, h_ax2)
 
-VariableDefault('h_ax1', []);
-VariableDefault('h_ax2', []);
+probe_id = 'CAA-1110264_rec1_rec2';  % 'CAA01119262'
+fs_id = 139;  % 139
+rs_id = 169;  % 183
 
-if isempty(h_ax1)
-    h_ax1 = gca();
-    hold on;
-end
+ctl = RC2Analysis();
 
+this_data = get_data_for_probe_id(data, probe_id);
+
+% link to prprocessed and raw data files
+ap = ctl.load.spikeglx_ap_recording(probe_id);
 
 [wide_waveforms, narrow_waveforms, wide_mean, narrow_mean,  wide_isis_ms, narrow_isis_ms, t, isi_edges] = ...
-    get_example_raw_waveforms();
+    get_example_raw_waveforms(this_data, ap, rs_id, fs_id);
 
 fontsize = 8;
 x_limits = [-0.6, 1.2];

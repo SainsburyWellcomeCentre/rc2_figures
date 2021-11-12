@@ -1,6 +1,0 @@
-Uses following MATLAB toolboxes:
-	Curve Fitting Toolbox
-	Statistics and Machine Learning Toolbox
-	Image Processing Toolbox
-	Signal Processing Toolbox
-	Symbolic Math Toolbox

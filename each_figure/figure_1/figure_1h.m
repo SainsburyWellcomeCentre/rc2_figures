@@ -1,81 +1,53 @@
 function figure_1h(data, h_ax)
 
-csv_dir = 'D:\mvelez\summary_data\stationary_vs_motion_fr';
+ctl                     = RC2Analysis();
+probe_ids               = ctl.get_probe_ids('visual_flow');
+cols                    = get_colours();
 
-recording_ids       = experiment_details('visual_flow');
-
-cols = get_colours();
-
-cluster_count = 0;
-VF_med = [];
-VF_T_med = [];
-modulation_index = [];
-p_val = [];
-change = {};
+cluster_count           = 0;
+VF_med                  = [];
+VF_T_med                = [];
+modulation_index        = [];
+p_val                   = [];
+direction               = [];
 
 relative_depth          = [];
 layer                   = {};
 anatomies               = Anatomy.empty();
 
 
-for rec_i = 1 : length(recording_ids)
+for ii = 1 : length(probe_ids)
     
-    this_data = get_data_for_recording_id(data, recording_ids{rec_i});
-    anatomies(rec_i)  = Anatomy(this_data);
+    if ~isempty(data)
+        this_data   = get_data_for_probe_id(data, probe_ids{ii});
+    else
+        this_data   = ctl.load_formatted_data(probe_ids{ii});
+    end
     
-    csv_fname = fullfile(csv_dir, sprintf('%s.csv', recording_ids{rec_i}));
-    svm_table = readsvmtable(csv_fname);
+    clusters    = this_data.VISp_clusters();
     
-    clusters = this_data.VISp_clusters();
+    anatomies{ii}       = data.anatomy;
     
-    for clust_i = 1 : length(clusters)
-        
-        
-        
-        idx = svm_table.cluster_id == clusters(clust_i).id & svm_table.protocol == 'ReplayOnly';
-        VF = svm_table.motion_firing_rate(idx);
-        
-        idx = svm_table.cluster_id == clusters(clust_i).id & svm_table.protocol == 'StageOnly';
-        VF_T = svm_table.motion_firing_rate(idx);
+    % get layer and relative position in layer for each cluster
+    for jj = 1 : length(clusters)
         
         cluster_count = cluster_count + 1;
+        
+        % get relative depth within layer and label of the layer for this
+        % cluster
+        [relative_depth(cluster_count), layer{cluster_count}] = this_data.get_relative_layer_depth_of_cluster(clusters(jj).id);
+        
+        % make sure that the layer returned by above function is same as
+        % that stored in the cluster structure
+        assert(strcmp(layer{cluster_count}, clusters(jj).region_str));
+        
+        VF      = this_data.motion_fr_for_trial_group(clusters(jj).id, {'V_RVT', 'V_RV'});
+        VF_T    = this_data.motion_fr_for_trial_group(clusters(jj).id, {'VT_RVT', 'VT_RV'});
+        
+        
         VF_med(cluster_count) = nanmedian(VF);
         VF_T_med(cluster_count) = nanmedian(VF_T);
-        [p_val(cluster_count), ~, stats] = signrank(VF, VF_T);
-        
-        [relative_depth(cluster_count), layer{cluster_count}] = ...
-                anatomies(rec_i).VISp_layer_relative_depth(clusters(clust_i).distance_from_probe_tip);
-        assert(strcmp(layer{cluster_count}, clusters(clust_i).region_str));
-        
-        % catch cases where medians are equal but there is a significant
-        % difference between the groups
-        if p_val(cluster_count) < 0.05
-            
-            if VF_med(cluster_count) == VF_T_med(cluster_count)
-                
-                [~, ~, stats_opp] = signrank(VF, VF_T);
-                if stats_opp.signedrank > stats.signedrank
-                    change{cluster_count} = 'increase';
-                elseif stats_opp.signedrank < stats.signedrank
-                    change{cluster_count} = 'decrease';
-                else
-                    error('Signed ranks are equal?');
-                end
-                
-            elseif VF_med(cluster_count) < VF_T_med(cluster_count)
-                
-                change{cluster_count} = 'increase';
-            elseif VF_med(cluster_count) > VF_T_med(cluster_count)
-                
-                change{cluster_count} = 'decrease';
-            end
-            
-        elseif p_val(cluster_count) >= 0.05
-            
-            change{cluster_count} = 'no_change';
-        else
-            warning('p value not numeric');
-        end
+        [~, p_val(cluster_count), direction(cluster_count)] = this_data.is_motion_vs_motion_significant(clusters(jj).id, {'V_RVT', 'V_RV'}, {'VT_RVT', 'VT_RV'});
         
         modulation_index(cluster_count) = (VF_T_med(cluster_count) - VF_med(cluster_count)) / ...
                                           (VF_T_med(cluster_count) + VF_med(cluster_count));
@@ -83,42 +55,64 @@ for rec_i = 1 : length(recording_ids)
 end
 
 
-% average the anatomy
 avg_anatomy = AverageAnatomy(anatomies);
-[boundaries, cluster_positions] = ...
-    avg_anatomy.mi_vs_depth_positions(relative_depth, layer);
-% merge layer 6a and 6b
-boundaries(end-1) = [];
+averaged_cortical_position = avg_anatomy.from_pia_using_relative_position(relative_depth, layer);
+
+
 
 
 %% Plot
-x_limits = [-1, 1];
-histogram_edges = -1:0.1:1;
+x_limits            = [-1, 1];
+histogram_edges     = -1:0.1:1;
 
-cortical_thickness = range(boundaries);
-space_for_histogram = cortical_thickness * (8.331/20.451); 
+% dimensions of axes
+layer_height_mm     = 20.451;  % distance in mm from lowest to highest cortical layer
+axis_to_layers_mm   = 8.331;   % distance from bottom of axis to lowest cortical layer
+subaxis_height_mm   = 3.765;   % height of the histogram axis
+subaxis_y_offset    = 1.093;   % offset in mm from bottom of axis to histogram
 
-y_limits = [boundaries(end)-space_for_histogram, boundaries(1)];
+% get averaged VISp layer boundaries
+boundaries = avg_anatomy.average_VISp_boundaries_from_pia;
+% merge VISp6a and VIS6b
 layer_str = {'L1', 'L2/3', 'L4', 'L5', 'L6'};
+boundaries(end-1) = [];
 
-for b = 1 : length(boundaries)
-    line(h_ax, x_limits, boundaries([b, b]), 'color', 'k', 'linewidth', 0.5, 'linestyle', '--');
-    if b > 1
-        text(h_ax, -1.3, mean(boundaries([b-1, b])), layer_str{b-1}, 'color', 'k', 'fontsize', 8, ...
-             'horizontalalignment', 'center', 'verticalalignment', 'middle');
+% amount of space for histogram at bottom in y-axis units
+cortical_thickness = range(avg_anatomy.average_VISp_boundaries_from_pia);
+space_for_histogram = cortical_thickness * (axis_to_layers_mm / layer_height_mm); 
+
+% y-limits of the whole axis including the histogram at bottom (we will
+% reverse the y-axis later, so for now space is at the top)
+y_limits = [boundaries(1), boundaries(end) + space_for_histogram];
+
+% plot the boundaries and text
+for ii = 1 : length(boundaries)
+    
+    line(h_ax, x_limits, boundaries([ii, ii]), 'color', 'k', 'linewidth', 0.5, 'linestyle', '--');
+    
+    % print layer text
+    if ii < length(boundaries)
+        x_pos = x_limits(1) - 0.15 * range(x_limits);
+        text(h_ax, x_pos, mean(boundaries([ii, ii+1])), layer_str{ii}, ...
+                'color', 'k', ...
+                'fontsize', 8, ...
+                'horizontalalignment', 'center', ...
+                'verticalalignment', 'middle');
     end
 end
 
 
 
-idx = strcmp(change, 'no_change');
-scatter(h_ax, modulation_index(idx), cluster_positions(idx), scatterball_size(0.73), [0.5, 0.5, 0.5]);
+idx = direction == 0;
+scatter(h_ax, modulation_index(idx), averaged_cortical_position(idx), scatterball_size(0.73), [0.5, 0.5, 0.5]);
 n_no_change = histcounts(modulation_index(idx), histogram_edges);
-idx = strcmp(change, 'increase');
-scatter(h_ax, modulation_index(idx), cluster_positions(idx), scatterball_size(1.25), cols('sig_increase'));
+
+idx = direction == 1;
+scatter(h_ax, modulation_index(idx), averaged_cortical_position(idx), scatterball_size(1.25), cols('sig_increase'));
 n_increase = histcounts(modulation_index(idx), histogram_edges);
-idx = strcmp(change, 'decrease');
-scatter(h_ax, modulation_index(idx), cluster_positions(idx), scatterball_size(1.25), cols('sig_decrease'));
+
+idx = direction == -1;
+scatter(h_ax, modulation_index(idx), averaged_cortical_position(idx), scatterball_size(1.25), cols('sig_decrease'));
 n_decrease = histcounts(modulation_index(idx), histogram_edges);
 
 
@@ -127,30 +121,34 @@ set(h_ax, 'xlim', x_limits, ...
           'xtick', [-1, 0, 1], ...
           'ylim', y_limits, ...
           'ycolor', 'none', ...
+          'ydir', 'reverse', ...
           'fontsize', 8, ...
           'color', 'none');
 
 xlabel(h_ax, {'Modulation index', 'VF vs. VF+T'}, 'fontsize', 8);
       
-% axis for histogram
+% position of the axis we have just used to plot depth vs MI
 original_axis_position = get(h_ax, 'position');
 
-layer_height_mm = 20.451;
-axis_to_layers_mm = 8.331;
-subaxis_height_mm = 3.765;
-subaxis_y_offset = 1.093;
+% height of axis for histogram (ratio of original axis)
+subaxis_height_ratio = subaxis_height_mm / (layer_height_mm + axis_to_layers_mm);
 
-subaxis_height_ratio = subaxis_height_mm/(layer_height_mm+axis_to_layers_mm);
-subaxis_y_offset_ratio = subaxis_y_offset/(layer_height_mm+axis_to_layers_mm);
+% height offset of this axis (ratio of original axis)
+subaxis_y_offset_ratio = subaxis_y_offset / (layer_height_mm + axis_to_layers_mm);
+
+% position of new axis
 subaxis_position = [original_axis_position(1), ...
                     original_axis_position(2) + subaxis_y_offset_ratio * original_axis_position(4), ...
                     original_axis_position(3), ...
                     subaxis_height_ratio * original_axis_position(4)];
-                
+
+% create new axis on A4 paper
 sub_h_ax = a4axis(h_ax.Parent, normpos2mmpos(subaxis_position));
 
+% maximun count in any of the bins
 max_count = max([n_no_change, n_increase, n_decrease]);
 
+% plot the histogram as individual bins
 for i = 1 : length(histogram_edges)-1
     
     if n_no_change(i) > 0
@@ -175,11 +173,11 @@ end
 
 
 set(sub_h_ax, 'xlim', x_limits, ...
-          'xtick', [], ...
-          'fontsize', 8, ...
-          'clipping', 'off');
+              'xtick', [], ...
+              'fontsize', 8, ...
+              'clipping', 'off');
 
-% draw line from bottom of axis 
+% draw line from bottom of axis to top
 sub_y_limits = [0, 1];
 line_length = range(sub_y_limits) * ((layer_height_mm+axis_to_layers_mm-subaxis_y_offset)/subaxis_height_mm);
 

@@ -1,118 +1,59 @@
 function figure_2h(data, h_ax)
 
-recording_ids       = experiment_details('mismatch_nov20');
-protocol_types      = 'CoupledMismatch';
-gain_dir            = 'up';
+force_replication   = true;
 
-window_t            = 0.1;
-n_windows           = 4;
+ctl                 = RC2Analysis();
+
+probe_ids           = ctl.get_probe_ids('mismatch_nov20', 'mismatch_jul21');
+trial_group_label   = 'RVT_gain_up';
 
 cluster_count       = 0;
 p_val               = [];
-change              = {};
+direction           = [];
 avg_baseline        = [];
 avg_response        = [];
 modulation_index    = [];
-animal_id           = [];
 
-relative_depth          = [];
-layer                   = {};
-anatomies               = Anatomy.empty();
+relative_depth      = [];
+layer               = {};
+anatomies           = Anatomy.empty();
 
+mm                  = MismatchAnalysis();
 
 %% extract and analyze data
-for rec_i = 1 : length(recording_ids)
+for ii = 1 : length(probe_ids)
     
-    rec_i
-    
-    this_data = get_data_for_recording_id(data, recording_ids{rec_i});
+    this_data = get_data_for_probe_id(data, probe_ids{ii});
     clusters = this_data.VISp_clusters();
-    anatomies(rec_i)  = Anatomy(this_data);
     
-    % get all trials for this recording
-    if strcmp(recording_ids{rec_i}, 'CAA-1112872_rec1_rec1b_rec2_rec3')
-        all_trials = [this_data.data.sessions(1).trials, this_data.data.sessions(2).trials];
-    else
-        all_trials = [this_data.data.sessions(1).trials];
-    end
+    anatomies{ii}       = data.anatomy;
     
-    % find trials of chosen type
-    idx = ismember({all_trials(:).protocol}, protocol_types);
-    configs = [all_trials(:).config];
-    idx_gain = strcmp({configs(:).gain_direction}, gain_dir);
-    idx = idx & idx_gain;
+    trials      = this_data.get_trials_with_trial_group_label(trial_group_label);
     
-    these_trials = all_trials(idx);
+    mm_start_t  = cellfun(@(x)(x.mismatch_onset_t), trials);
+    mm_end_t    = cellfun(@(x)(x.mismatch_offset_t), trials);
     
-    n_trials = length(these_trials);
+    trials(mm_end_t - mm_start_t < 0.05) = [];
     
-    mm_start_t = nan(1, n_trials);
-    mm_end_t = nan(1, n_trials);
-    
-    for i = 1 : n_trials
-        mm_start_t(i) = these_trials(i).mismatch_onset_t();
-        mm_end_t(i) = these_trials(i).mismatch_offset_t();
-    end
-    
-    
-    for clust_i = 1 : length(clusters)
+    for jj = 1 : length(clusters)
+        
+        % force a replication of an old figure... to remove in future
+        if force_replication
+            if ii == 4 && ismember(clusters(jj).id, [224, 225, 230])
+                continue
+            end
+        end
         
         cluster_count = cluster_count + 1;
         
-        spike_times = clusters(clust_i).spike_times;
-        fr = FiringRate(spike_times);
+        % get relative depth within layer and label of the layer for this
+        % cluster
+        [relative_depth(cluster_count), layer{cluster_count}] = this_data.get_relative_layer_depth_of_cluster(clusters(jj).id);
         
-        [relative_depth(cluster_count), layer{cluster_count}] = ...
-                anatomies(rec_i).VISp_layer_relative_depth(clusters(clust_i).distance_from_probe_tip);
-        assert(strcmp(layer{cluster_count}, clusters(clust_i).region_str));
         
-        baseline = nan(n_trials, n_windows);
-        response = nan(n_trials, n_windows);
-        control = nan(n_trials, n_windows);
-        
-        for trial_i = 1 : n_trials
-            
-            if mm_end_t(trial_i) - mm_start_t(trial_i) < 0.05
-                continue
-            end
-            
-            for win_i = 1 : n_windows
-                
-                this_window = [(win_i-1), win_i] * window_t;
-                control_window = mm_start_t(trial_i) - 2 * n_windows * window_t + this_window;
-                baseline_window = mm_start_t(trial_i) - n_windows * window_t + this_window;
-                response_window = mm_start_t(trial_i) + this_window;
-                
-                control(trial_i, win_i) = fr.get_fr_in_window(control_window);
-                baseline(trial_i, win_i) = fr.get_fr_in_window(baseline_window);
-                response(trial_i, win_i) = fr.get_fr_in_window(response_window);
-            end
-        end
-        
-        avg_baseline(cluster_count) = nanmean(baseline(:));
-        avg_response(cluster_count) = nanmean(response(:));
-        animal_id(cluster_count) = rec_i;
-        
-        p = mm_do_ANOVA(baseline', response');
-        p_ctl = mm_do_ANOVA(baseline', control');
-        
-        if p_ctl(1) < 0.05
-            p_val(cluster_count) = nan;
-            change{cluster_count} = 'no_change';
-        else
-            p_val(cluster_count) = p(1);
-            if p(1) < 0.05
-                if avg_baseline(cluster_count) < avg_response(cluster_count)
-                    change{cluster_count} = 'increase';
-                elseif avg_baseline(cluster_count) > avg_response(cluster_count)
-                    change{cluster_count} = 'decrease';
-                else
-                    error('??');
-                end
-            else
-                change{cluster_count} = 'no_change';
-            end
-        end
+        avg_baseline(cluster_count) = mm.get_avg_baseline_fr(clusters(jj), trials);
+        avg_response(cluster_count) = mm.get_avg_response_fr(clusters(jj), trials);
+        [~, p_val(cluster_count), direction(cluster_count)] = mm.is_response_significant(clusters(jj), trials);
         
         modulation_index(cluster_count) = (avg_response(cluster_count) - avg_baseline(cluster_count)) / ...
                                           (avg_response(cluster_count) + avg_baseline(cluster_count));
@@ -120,12 +61,9 @@ for rec_i = 1 : length(recording_ids)
 end
 
 
-% average the anatomy
 avg_anatomy = AverageAnatomy(anatomies);
-[boundaries, cluster_positions] = ...
-    avg_anatomy.mi_vs_depth_positions(relative_depth, layer);
-% merge layer 6a and 6b
-boundaries(end-1) = [];
+averaged_cortical_position = avg_anatomy.from_pia_using_relative_position(relative_depth, layer);
+
 
 
 %% Plot
@@ -134,30 +72,54 @@ cols = get_colours();
 x_limits = [-1, 1];
 histogram_edges = -1:0.1:1;
 
-cortical_thickness = range(boundaries);
-space_for_histogram = cortical_thickness * (8.331/20.451); 
+layer_height_mm = 19.576;
+axis_to_layers_mm = 9.655;
+subaxis_height_mm = 2.883;
+subaxis_y_offset = 1.345;
 
-y_limits = [boundaries(end)-space_for_histogram, boundaries(1)];
+
+% get averaged VISp layer boundaries
+boundaries = avg_anatomy.average_VISp_boundaries_from_pia;
+% merge VISp6a and VIS6b
 layer_str = {'L1', 'L2/3', 'L4', 'L5', 'L6'};
+boundaries(end-1) = [];
 
-for b = 1 : length(boundaries)
-    line(h_ax, x_limits, boundaries([b, b]), 'color', 'k', 'linewidth', 0.5, 'linestyle', '--');
-    if b > 1
-        text(h_ax, -1.3, mean(boundaries([b-1, b])), layer_str{b-1}, 'color', 'k', 'fontsize', 8, ...
-             'horizontalalignment', 'center', 'verticalalignment', 'middle');
+% amount of space for histogram at bottom in y-axis units
+cortical_thickness = range(avg_anatomy.average_VISp_boundaries_from_pia);
+space_for_histogram = cortical_thickness * (axis_to_layers_mm / layer_height_mm); 
+
+% y-limits of the whole axis including the histogram at bottom (we will
+% reverse the y-axis later, so for now space is at the top)
+y_limits = [boundaries(1), boundaries(end) + space_for_histogram];
+
+% plot the boundaries and text
+for ii = 1 : length(boundaries)
+    
+    line(h_ax, x_limits, boundaries([ii, ii]), 'color', 'k', 'linewidth', 0.5, 'linestyle', '--');
+    
+    % print layer text
+    if ii < length(boundaries)
+        x_pos = x_limits(1) - 0.15 * range(x_limits);
+        text(h_ax, x_pos, mean(boundaries([ii, ii+1])), layer_str{ii}, ...
+                'color', 'k', ...
+                'fontsize', 8, ...
+                'horizontalalignment', 'center', ...
+                'verticalalignment', 'middle');
     end
 end
 
 
 
-idx = strcmp(change, 'no_change');
-scatter(h_ax, modulation_index(idx), cluster_positions(idx), scatterball_size(0.73), [0.5, 0.5, 0.5]);
+idx = direction == 0;
+scatter(h_ax, modulation_index(idx), averaged_cortical_position(idx), scatterball_size(0.73), [0.5, 0.5, 0.5]);
 n_no_change = histcounts(modulation_index(idx), histogram_edges);
-idx = strcmp(change, 'increase');
-scatter(h_ax, modulation_index(idx), cluster_positions(idx), scatterball_size(1.25), cols('sig_increase'));
+
+idx = direction == 1;
+scatter(h_ax, modulation_index(idx), averaged_cortical_position(idx), scatterball_size(1.25), cols('sig_increase'));
 n_increase = histcounts(modulation_index(idx), histogram_edges);
-idx = strcmp(change, 'decrease');
-scatter(h_ax, modulation_index(idx), cluster_positions(idx), scatterball_size(1.25), cols('sig_decrease'));
+
+idx = direction == -1;
+scatter(h_ax, modulation_index(idx), averaged_cortical_position(idx), scatterball_size(1.25), cols('sig_decrease'));
 n_decrease = histcounts(modulation_index(idx), histogram_edges);
 
 
@@ -166,31 +128,40 @@ set(h_ax, 'xlim', x_limits, ...
           'xtick', [-1, 0, 1], ...
           'ylim', y_limits, ...
           'ycolor', 'none', ...
+          'ydir', 'reverse', ...
           'fontsize', 8, ...
           'color', 'none');
 
 xlabel(h_ax, 'Modulation index', 'fontsize', 8);
-text(h_ax, 0, y_limits(2) + 0.05 * range(y_limits), 'R:VF+T', 'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'bottom');
+   
+text(h_ax, 0, h_ax.YLim(1) - 0.02*range(h_ax.YLim), 'R:VT+T', ...
+    'fontsize', 8, ...
+    'fontweight', 'normal', ...
+    'horizontalalignment', 'center', ...
+    'verticalalignment', 'bottom')
 
-% axis for histogram
+% position of the axis we have just used to plot depth vs MI
 original_axis_position = get(h_ax, 'position');
 
-layer_height_mm = 19.576;
-axis_to_layers_mm = 9.655;
-subaxis_height_mm = 2.883;
-subaxis_y_offset = 1.345;
+% height of axis for histogram (ratio of original axis)
+subaxis_height_ratio = subaxis_height_mm / (layer_height_mm + axis_to_layers_mm);
 
-subaxis_height_ratio = subaxis_height_mm/(layer_height_mm+axis_to_layers_mm);
-subaxis_y_offset_ratio = subaxis_y_offset/(layer_height_mm+axis_to_layers_mm);
+% height offset of this axis (ratio of original axis)
+subaxis_y_offset_ratio = subaxis_y_offset / (layer_height_mm + axis_to_layers_mm);
+
+% position of new axis
 subaxis_position = [original_axis_position(1), ...
                     original_axis_position(2) + subaxis_y_offset_ratio * original_axis_position(4), ...
                     original_axis_position(3), ...
                     subaxis_height_ratio * original_axis_position(4)];
-                
+
+% create new axis on A4 paper
 sub_h_ax = a4axis(h_ax.Parent, normpos2mmpos(subaxis_position));
 
+% maximun count in any of the bins
 max_count = max([n_no_change, n_increase, n_decrease]);
 
+% plot the histogram as individual bins
 for i = 1 : length(histogram_edges)-1
     
     if n_no_change(i) > 0
@@ -215,11 +186,12 @@ end
 
 
 set(sub_h_ax, 'xlim', x_limits, ...
-          'xtick', [], ...
-          'fontsize', 8, ...
-          'clipping', 'off');
+              'xtick', [], ...
+              'ylim', [0, 1], ...
+              'fontsize', 8, ...
+              'clipping', 'off');
 
-% draw line from bottom of axis 
+% draw line from bottom of axis to top
 sub_y_limits = [0, 1];
 line_length = range(sub_y_limits) * ((layer_height_mm+axis_to_layers_mm-subaxis_y_offset)/subaxis_height_mm);
 

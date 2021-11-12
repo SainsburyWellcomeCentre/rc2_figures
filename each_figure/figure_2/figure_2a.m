@@ -1,9 +1,9 @@
 function figure_2a(data, h_ax)
 
-recording_id        = 'CAA-1112872_rec1_rec1b_rec2_rec3';
-session_n           = 2;
+ctl                 = RC2Analysis();
+probe_id            = 'CAA-1112872_rec1_rec1b_rec2_rec3';
 trial_id            = 33;
-padding             = [-1, 1];
+padding             = [-1.1, 1.1];
 fs                  = 10000;
 
 traces_to_plot      = {'running', 'visual_flow', 'translation'};
@@ -15,9 +15,13 @@ cols                = get_colours();
 symbols             = get_symbols();
 
 %% Get data
-this_data           = get_data_for_recording_id(data, recording_id);
-idx                 = [this_data.data.sessions(session_n).trials(:).id] == trial_id;
-this_trial          = this_data.data.sessions(session_n).trials(idx);
+if ~isempty(data)
+    this_data           = get_data_for_probe_id(data, probe_id);
+else
+    this_data           = ctl.load_formatted_data(probe_id);
+end
+
+this_trial          = this_data.get_trials_with_trial_ids(trial_id);
 
 mm_onset_idx        = find(diff(this_trial.teensy_gain > 2.5) == 1) + 1;
 mm_offset_idx       = find(diff(this_trial.teensy_gain > 2.5) == -1) + 1;

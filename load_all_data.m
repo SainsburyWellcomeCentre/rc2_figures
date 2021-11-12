@@ -1,0 +1,13 @@
+ctl = RC2Analysis();
+
+probe_ids  = ctl.get_probe_ids('visual_flow', ...
+                               'mismatch_nov20', ...
+                               'mismatch_jul21', ...
+                               'mismatch_darkness_oct21', ...
+                               'darkness');
+
+for ii = 1 : length(probe_ids)
+    
+    fprintf('Loading %s (%i/%i)\n', probe_ids{ii}, ii, length(probe_ids));
+    data(ii) = ctl.load_formatted_data(probe_ids{ii});
+end

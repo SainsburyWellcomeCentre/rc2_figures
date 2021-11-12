@@ -1,23 +1,21 @@
-function figure_1f(data, h_ax)
+function figure_1f(h_ax)
 
-csv_dir = 'D:\mvelez\summary_data\stationary_vs_motion_fr';
-recording_id = 'CAA-1110264_rec1_rec2';
-cluster_id = 209;
+ctl             = RC2Analysis();
+probe_id        = 'CAA-1110264_rec1_rec2';
+cluster_id      = 209;
 
 
 
 %% Load
-csv_fname = fullfile(csv_dir, sprintf('%s.csv', recording_id));
-svm_table = readsvmtable(csv_fname);
+svm_table = ctl.load_svm_table(probe_id);
 
+idx = svm_table.cluster_id == cluster_id & ismember(svm_table.trial_group_label, {'V_RVT', 'V_RV'});
+VF_bsl = svm_table.stationary_fr(idx);
+VF_rsp = svm_table.motion_fr(idx);
 
-idx = svm_table.cluster_id == cluster_id & svm_table.protocol == 'ReplayOnly';
-VF_bsl = svm_table.stationary_firing_rate(idx);
-VF_rsp = svm_table.motion_firing_rate(idx);
-
-idx = svm_table.cluster_id == cluster_id & svm_table.protocol == 'StageOnly';
-VF_T_bsl = svm_table.stationary_firing_rate(idx);
-VF_T_rsp = svm_table.motion_firing_rate(idx);
+idx = svm_table.cluster_id == cluster_id & ismember(svm_table.trial_group_label, {'VT_RVT', 'VT_RV'});
+VF_T_bsl = svm_table.stationary_fr(idx);
+VF_T_rsp = svm_table.motion_fr(idx);
 
 
 assert(length(VF_bsl) == length(VF_T_bsl));

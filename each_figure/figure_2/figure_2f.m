@@ -1,84 +1,51 @@
 function figure_2f(data, h_ax1, h_ax2, h_ax3)
 
-recording_ids       = experiment_details('mismatch_nov20');
-protocol_types      = 'EncoderOnlyMismatch';
-gain_dir            = 'up';
+ctl = RC2Analysis();
+
+probe_ids           = ctl.get_probe_ids('mismatch_nov20', 'mismatch_jul21');
+trial_group_labels  = {'RV_gain_up'};
+order_by_label      = {'RVT_gain_up'};
 
 fs                  = 10000;
-baseline_t          = [-1, 0];
-response_t          = [0, 1];
+
+baseline_t          = [-0.4, 0];
 
 % display
 padding             = [-1, 1];
 fr_limits           = [-8, 8];
 
 
+
 %% extract and analyze data
-n_sample_points     = ceil(range(padding)*fs);
-common_t            = linspace(padding(1), padding(2), n_sample_points);
-
-cluster_count       = 0;
 fr_mean             = [];
+response_magnitude  = [];
 
+for ii = 1 : length(probe_ids)
+    
+    this_data   = get_data_for_probe_id(data, probe_ids{ii});
+    clusters    = this_data.VISp_clusters();
 
-for rec_i = 1 : length(recording_ids)
-    rec_i
-    this_data = get_data_for_recording_id(data, recording_ids{rec_i});
-    
-    clusters = this_data.VISp_clusters();
-    
-    % get all trials for this recording
-    if strcmp(recording_ids{rec_i}, 'CAA-1112872_rec1_rec1b_rec2_rec3')
-        all_trials = [this_data.data.sessions(1).trials, this_data.data.sessions(2).trials];
-    else
-        all_trials = [this_data.data.sessions(1).trials];
-    end
-    
-    % find trials of chosen type
-    idx = ismember({all_trials(:).protocol}, protocol_types);
-    
-    configs = [all_trials(:).config];
-    idx_gain = strcmp({configs(:).gain_direction}, gain_dir);
-    idx = idx & idx_gain;
-    
-    
-    these_trials = all_trials(idx);
-    
-    n_trials = length(these_trials);
-    
-    mm_start_t = nan(1, n_trials);
-    for i = 1 : n_trials
-        mm_start_t(i) = these_trials(i).mismatch_onset_t();
-    end
-    
-    
-    for clust_i = 1 : length(clusters)
+    for jj = 1 : length(clusters)
         
-        spike_times = clusters(clust_i).spike_times;
-        fr = FiringRate(spike_times);
-        
-        fr_conv = nan(n_sample_points, n_trials);
-        
-        for i = 1 : n_trials
-            fr_conv(:, i) = fr.get_convolution(mm_start_t(i) + common_t);
-        end
-        
-        cluster_count = cluster_count + 1;
-        
-        fr_mean(cluster_count, :) = mean(fr_conv, 2)';
+        [fr_traces, common_t]       = this_data.get_fr_responses(clusters(jj).id, trial_group_labels, 'mismatch', padding, fs);
+        fr_mean(end+1, :)           = mean(fr_traces, 1);
+        response_magnitude(end+1)   = this_data.get_mismatch_response(clusters(jj).id, order_by_label);
     end
 end
 
+n_clusters = size(fr_mean, 1);
+
 % reorder heatmap
-baseline_idx = common_t >= baseline_t(1) & common_t < baseline_t(2);
+baseline_idx            = common_t >= baseline_t(1) & common_t < baseline_t(2);
+[~, cluster_idx_sorted] = sort(response_magnitude, 'ascend');
+heatmap                 = fr_mean(cluster_idx_sorted, :);
 
-cluster_idx_sorted = figure_2g(data, []);
+% subtract baseline period
+heatmap                 = bsxfun(@minus, heatmap, mean(heatmap(:, baseline_idx), 2));
 
-heatmap = fr_mean(cluster_idx_sorted, :);
-heatmap = bsxfun(@minus, heatmap, mean(heatmap(:, baseline_idx), 2));
-
-population_average = mean(heatmap, 1);
-population_sem = std(heatmap, [], 1) / sqrt(cluster_count);
+% compute population average and sem
+population_average      = mean(heatmap, 1);
+population_sem          = std(heatmap, [], 1) / sqrt(n_clusters);
 
 
 
@@ -93,27 +60,27 @@ colormap(h_ax2, cols('red2blue_map'));
 set(h_im, 'xdata', common_t);
 set(h_ax2, 'clim', fr_limits, ...
            'xlim', padding, ...
-           'ylim', [0.5, cluster_count+0.5], ...
+           'ylim', [0.5, n_clusters+0.5], ...
            'xcolor', 'none', ...
            'ycolor', 'none');
 
-text(h_ax2, padding(1)-0.2, cluster_count, sprintf('%i', 1), ...
+text(h_ax2, padding(1)-0.2, n_clusters, sprintf('%i', 1), ...
     'horizontalalignment', 'right', ...
     'verticalalignment', 'middle', ...
     'fontsize', 8);
 
-text(h_ax2, padding(1)-0.2, 1, sprintf('%i', cluster_count), ...
+text(h_ax2, padding(1)-0.2, 1, sprintf('%i', n_clusters), ...
     'horizontalalignment', 'right', ...
     'verticalalignment', 'middle', ...
     'fontsize', 8);
 
-text(h_ax2, padding(1)-0.3, (cluster_count + 1) / 2, 'cell #', ...
+text(h_ax2, padding(1)-0.3, (n_clusters + 1) / 2, 'cell #', ...
     'horizontalalignment', 'center', ...
     'verticalalignment', 'bottom', ...
     'fontsize', 8, ...
     'rotation', 90);
 
-text(h_ax2, padding(2), cluster_count + 3, 'all cells', ...
+text(h_ax2, padding(2), n_clusters + 3, 'all cells', ...
     'horizontalalignment', 'right', ...
     'verticalalignment', 'bottom', ...
     'fontsize', 6);
@@ -188,5 +155,5 @@ patch(h_ax1, 'xdata', [0, 0.25, 0.25, 0], 'ydata', [0, 0, 1, 1], 'facecolor', [0
 set(h_ax1, ...
     'xlim', padding, ...
     'color', 'none');
+text(h_ax1, 0.125, 1.01, 'slip', 'color', 'k', 'fontsize', 6, 'horizontalalignment', 'center', 'verticalalignment', 'top');
 axis(h_ax1, 'off');
-

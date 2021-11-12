@@ -1,53 +1,35 @@
 function figure_s2d(data, h_ax)
 
-VariableDefault('h_ax', []);
-if isempty(h_ax)
-    h_ax = gca();
-    hold on;
+ctl = RC2Analysis();
+probe_ids = ctl.get_probe_ids('visual_flow');
+trial_group_labels = {'VT_RVT', 'VT_RV'};
+
+c = 0;
+x_med = [];
+y_med = [];
+direction = [];
+
+for ii = 1 : length(probe_ids)
+    
+    this_data = get_data_for_probe_id(data, probe_ids{ii});
+    clusters = this_data.VISp_clusters();
+    
+    for jj = 1 : length(clusters)
+        
+        c = c + 1;
+        [~, ~, direction(c), x_med(c), y_med(c)] = this_data.is_stationary_vs_motion_significant(clusters(jj).id, trial_group_labels);
+    end
 end
 
-% for replication with previous versions
-restrict_trials         = true;
-weird_cluster_remove    = false;
 
-
-
-recording_ids       = experiment_details('visual_flow');
-
-x_meta.protocol = 'StageOnly';
-x_meta.motion = false;
-x_meta.gain_dir = '';
-if restrict_trials
-    x_meta.replay_of = 'EncoderOnly';
-else
-    x_meta.replay_of = '';
-end
-
-y_meta.protocol = 'StageOnly';
-y_meta.gain_dir = '';
-y_meta.motion = true;
-if restrict_trials
-    y_meta.replay_of = 'EncoderOnly';
-else
-    y_meta.replay_of = '';
-end
-
-[x_med, y_med, ~, change, info] = unity_plot_data(data, recording_ids, x_meta, y_meta, restrict_trials);
-
-
-
-if weird_cluster_remove
-    zero_issue = [info(:).odd_zero_issue];
-    change(zero_issue) = {'no_change'};
-end
 
 %% Plot
-
 fmt.xy_limits = [0, 70];
 fmt.tick_space = 20;
 fmt.line_order = 'top';
 fmt.xlabel = 'FR baseline (Hz)';
 fmt.ylabel = 'FR VF+T (Hz)';
 fmt.include_inset = false;
+fmt.colour_by = 'significance';
 
-unity_plot_plot(h_ax, x_med, y_med, change, fmt);
+unity_plot_plot(h_ax, x_med, y_med, direction, fmt);
