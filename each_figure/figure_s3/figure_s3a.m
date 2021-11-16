@@ -6,7 +6,11 @@ rs_id = 169;  % 183
 
 ctl = RC2Analysis();
 
-this_data = get_data_for_probe_id(data, probe_id);
+if isempty(data)
+    this_data = ctl.load_formatted_data(probe_id);
+else
+    this_data = get_data_for_probe_id(data, probe_id);
+end
 
 % link to prprocessed and raw data files
 ap = ctl.load.spikeglx_ap_recording(probe_id);

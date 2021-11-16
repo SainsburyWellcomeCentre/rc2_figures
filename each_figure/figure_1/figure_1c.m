@@ -1,15 +1,12 @@
-function [heatmap, common_t, spike_class] = figure_1c(data, h_ax_upper, h_ax_lower)
+function figure_1c(data, h_ax_upper, h_ax_lower)
+%%Figure 1C
 
-ctl = RC2Analysis();
-
+ctl                 = RC2Analysis();
 probe_ids           = ctl.get_probe_ids('visual_flow', 'mismatch_nov20', 'mismatch_jul21');
 trial_type_labels   = {'RVT', 'RVT_gain_up'};
-
 fs                  = 10000;
 baseline_t          = [-0.4, 0];
 response_t          = [0, 0.4];
-
-% display
 padding             = [-1, 1];
 fr_limits           = [-8, 8];
 
@@ -22,7 +19,12 @@ fr_mean = [];
 
 for ii = 1 : length(probe_ids)
     
-    this_data = get_data_for_probe_id(data, probe_ids{ii});
+    if isempty(data)
+        this_data = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data = get_data_for_probe_id(data, probe_ids{ii});
+    end
+    
     clusters = this_data.VISp_clusters();
 
     for jj = 1 : length(clusters)

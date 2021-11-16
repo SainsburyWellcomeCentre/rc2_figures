@@ -1,8 +1,7 @@
 function [t, traces, spike_times] = ...
-    get_example_trace_data(data, probe_id, trial_id, bout_n, cluster_id, padding, fs)
-
-% get probe 
-this_data = get_data_for_probe_id(data, probe_id);
+    get_example_trace_data(this_data, trial_id, bout_n, cluster_id, padding, fs)
+%%get traces (running, visual flow and translation) for trial with trial
+%%ID, motion bout # within trial
 
 trials = this_data.motion_trials();
 idx = cellfun(@(x)(x.trial_id == trial_id), trials);
@@ -12,11 +11,17 @@ bouts = this_trial.motion_bouts(true, true);
 
 idx_to_show = bouts{bout_n}.start_idx+fs*padding(1):bouts{bout_n}.end_idx+fs*padding(2);
 
-traces = containers.Map({'running', 'visual_flow', 'translation'}, ...
-                        {this_trial.treadmill_speed(idx_to_show), ... 
-                         this_trial.multiplexer_speed(idx_to_show), ...
-                         this_trial.stage_speed(idx_to_show)});
-
+if ~isempty(this_trial.multiplexer_output)
+    traces = containers.Map({'running', 'visual_flow', 'translation'}, ...
+                            {this_trial.treadmill_speed(idx_to_show), ... 
+                             this_trial.multiplexer_speed(idx_to_show), ...
+                             this_trial.stage_speed(idx_to_show)});
+else
+    traces = containers.Map({'running', 'translation'}, ...
+                            {this_trial.treadmill_speed(idx_to_show), ... 
+                             this_trial.stage_speed(idx_to_show)});
+end
+                     
 t = (idx_to_show - bouts{bout_n}.start_idx) * (1/fs);
 
 idx = [this_data.clusters(:).id] == cluster_id;

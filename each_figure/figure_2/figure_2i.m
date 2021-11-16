@@ -1,33 +1,41 @@
 function figure_2i(data, h_ax)
 
+experiment_groups   = {'darkness', 'mismatch_darkness_oct21'};
+R_trial_group_labels = 'R';
+T_trial_group_labels = {'T_bank', 'T_RT', 'T_R', 'T'};
+
+
+%% Data
+
 ctl                 = RC2Analysis();
+probe_ids           = ctl.get_probe_ids(experiment_groups{:});
 
-probe_ids           = ctl.get_probe_ids('darkness', 'mismatch_darkness_oct21');
-
-cols                = get_colours();
-
-cluster_count       = 0;
+c                   = 0;
 R_p_val             = [];
 T_p_val             = [];
 
 for ii = 1 : length(probe_ids)
     
-    % extract data for probe ID
-    this_data = get_data_for_probe_id(data, probe_ids{ii});
-    % VISp clusters
+    if isempty(data)
+        this_data = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data = get_data_for_probe_id(data, probe_ids{ii});
+    end
+    
     clusters = this_data.VISp_clusters();
     
     for jj = 1 : length(clusters)
         
-        cluster_count = cluster_count + 1;
+        c = c + 1;
         
-        [~, R_p_val(cluster_count)] = this_data.is_stationary_vs_motion_significant(clusters(jj).id, 'R');
-        [~, T_p_val(cluster_count)] = this_data.is_stationary_vs_motion_significant(clusters(jj).id, {'T_bank', 'T_RT', 'T_R', 'T'});
+        [~, R_p_val(c)] = this_data.is_stationary_vs_motion_significant(clusters(jj).id, R_trial_group_labels);
+        [~, T_p_val(c)] = this_data.is_stationary_vs_motion_significant(clusters(jj).id, T_trial_group_labels);
     end
 end
 
 
-%% plot
+%% Plot
+cols                = get_colours();
 
 hold on;
 A = R_p_val < 0.05;
@@ -79,8 +87,6 @@ B = T_p_val < 0.05;
 % line(h_ax, -base_diameter_mm - 0.5 + [0, 4.2], [0, -1.2], 'color', 'k', 'linewidth', 0.5);
 
 
-
-
 % Potentially if something more complicated required:
 s = SimpleVenn(h_ax);
 s.A = sum(A);
@@ -117,17 +123,18 @@ text(h_ax, x_pos, y_limits(2) + 0*range(y_limits), col_str, 'fontsize', 6, 'hori
 col_str = sprintf('\\color[rgb]{%.3f,%.3f,%.3f}T', cols('translation'));
 text(h_ax, x_pos, y_limits(2) - 0.12*range(y_limits), col_str, 'fontsize', 6, 'color', cols('translation'), 'horizontalalignment', 'left', 'verticalalignment', 'middle');
 
-prc_R = 100*sum(A & ~B)/length(B);
-prc_T = 100*sum(B & ~A)/length(B);
-prc_R_and_T = 100*sum(A & B)/length(B);
+% print percentages
+n_R_or_T = sum(A | B);
+n_R_not_T = sum(A & ~B);
+n_T_not_R = sum(B & ~A);
+n_R_and_T = sum(A & B);
 
-
+prc_R_not_T = 100 * n_R_not_T / n_R_or_T;
+prc_T_not_R = 100 * n_T_not_R / n_R_or_T;
+prc_R_and_T = 100 * n_R_and_T / n_R_or_T;
 
 text(h_ax, 0, 0, sprintf('%.0f%%', prc_R_and_T), 'fontsize', 8, 'color', 'k', 'horizontalalignment', 'center', 'verticalalignment', 'middle');
-text(h_ax, 0.25, 0, sprintf('%.0f%%', prc_T), 'fontsize', 8, 'color', cols('translation'), 'horizontalalignment', 'left', 'verticalalignment', 'middle');
-text(h_ax, -0.25, 0, sprintf('%.0f%%', prc_R), 'fontsize', 8, 'color', cols('running'), 'horizontalalignment', 'right', 'verticalalignment', 'middle');
-
+text(h_ax, 0.25, 0, sprintf('%.0f%%', prc_T_not_R), 'fontsize', 8, 'color', cols('translation'), 'horizontalalignment', 'left', 'verticalalignment', 'middle');
+text(h_ax, -0.25, 0, sprintf('%.0f%%', prc_R_not_T), 'fontsize', 8, 'color', cols('running'), 'horizontalalignment', 'right', 'verticalalignment', 'middle');
 
 % line(h_ax, -base_diameter_mm - 0.5 + [0, 4.2], [0, -1.2], 'color', 'k', 'linewidth', 0.5);
-
-

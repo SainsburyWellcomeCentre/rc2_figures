@@ -1,27 +1,28 @@
-function cluster_idx_sorted = figure_2c(data, h_ax1, h_ax2, h_ax3)
+function figure_2c(data, h_ax1, h_ax2, h_ax3)
 
-ctl = RC2Analysis();
-
+ctl                 = RC2Analysis();
 probe_ids           = ctl.get_probe_ids('mismatch_nov20', 'mismatch_jul21');
 trial_group_labels = {'RVT_gain_up'};
-
 fs                  = 10000;
-
 baseline_t          = [-0.4, 0];
-
-% display
 padding             = [-1, 1];
 fr_limits           = [-8, 8];
+cols                = get_colours();
 
 
+%% Data
 
-%% extract and analyze data
 fr_mean             = [];
 response_magnitude  = [];
 
 for ii = 1 : length(probe_ids)
     
-    this_data   = get_data_for_probe_id(data, probe_ids{ii});
+    if isempty(data)
+        this_data = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data = get_data_for_probe_id(data, probe_ids{ii});
+    end
+    
     clusters    = this_data.VISp_clusters();
 
     for jj = 1 : length(clusters)
@@ -47,111 +48,7 @@ population_average      = mean(heatmap, 1);
 population_sem          = std(heatmap, [], 1) / sqrt(n_clusters);
 
 
-
-
-% probe_ids       = experiment_details('mismatch_nov20');
-% protocol_types      = 'CoupledMismatch';
-% gain_dir            = 'up';
-% 
-% fs                  = 10000;
-% baseline_t          = [-1, 0];
-% response_t          = [0, 1];
-% 
-% % display
-% padding             = [-1, 1];
-% fr_limits           = [-8, 8];
-% 
-% 
-% %% extract and analyze data
-% n_sample_points     = ceil(range(padding)*fs);
-% common_t            = linspace(padding(1), padding(2), n_sample_points);
-% 
-% n_clusters       = 0;
-% fr_mean             = [];
-% 
-% 
-% for rec_i = 1 : length(probe_ids)
-%     rec_i
-%     this_data = get_data_for_probe_id(data, probe_ids{rec_i});
-%     
-%     clusters = this_data.VISp_clusters();
-%     
-%     % get all trials for this recording
-%     if strcmp(probe_ids{rec_i}, 'CAA-1112872_rec1_rec1b_rec2_rec3')
-%         all_trials = [this_data.data.sessions(1).trials, this_data.data.sessions(2).trials];
-%     else
-%         all_trials = [this_data.data.sessions(1).trials];
-%     end
-%     
-%     % find trials of chosen type
-%     idx = ismember({all_trials(:).protocol}, protocol_types);
-%     
-%     configs = [all_trials(:).config];
-%     idx_gain = strcmp({configs(:).gain_direction}, gain_dir);
-%     idx = idx & idx_gain;
-%     
-%     
-%     these_trials = all_trials(idx);
-%     
-%     n_trials = length(these_trials);
-%     
-%     mm_start_t = nan(1, n_trials);
-%     for i = 1 : n_trials
-%         mm_start_t(i) = these_trials(i).mismatch_onset_t();
-%     end
-%     
-%     
-%     for clust_i = 1 : length(clusters)
-%         
-%         spike_times = clusters(clust_i).spike_times;
-%         fr = FiringRate(spike_times);
-%         
-%         fr_conv = nan(n_sample_points, n_trials);
-%         
-%         for i = 1 : n_trials
-%             fr_conv(:, i) = fr.get_convolution(mm_start_t(i) + common_t);
-%         end
-%         
-%         n_clusters = n_clusters + 1;
-%         
-%         fr_mean(n_clusters, :) = mean(fr_conv, 2)';
-%     end
-% end
-% 
-% % does a weird thing here
-% 
-% 
-% 
-% % reorder heatmap
-% baseline_idx = common_t >= baseline_t(1) & common_t < baseline_t(2);
-% % response_idx = common_t >= response_t(1) & common_t < response_t(2);
-% 
-% % baseline_fr = mean(fr_mean(:, baseline_idx), 2);
-% % response_fr = mean(fr_mean(:, response_idx), 2);
-% 
-% % delta_fr = response_fr - baseline_fr;
-% 
-% % [~, cluster_idx_sorted] = sort(delta_fr, 'ascend');
-% 
-% % if isempty(h_ax1)
-% %     return
-% % end
-% 
-% cluster_idx_sorted = figure_2g(data, []);
-% 
-% heatmap = fr_mean(cluster_idx_sorted, :);
-% heatmap = bsxfun(@minus, heatmap, mean(heatmap(:, baseline_idx), 2));
-% 
-% population_average = mean(heatmap, 1);
-% population_sem = std(heatmap, [], 1) / sqrt(n_clusters);
-% 
-% 
-% 
-%% plot
-cols = get_colours();
-
-
-
+%% Plot
 h_im  = imagesc(h_ax2, heatmap);
 colormap(h_ax2, cols('red2blue_map'));
 

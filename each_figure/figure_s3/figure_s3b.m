@@ -1,25 +1,30 @@
 function figure_s3b(data, h_ax1, h_ax2)
 
-threshold_ms = 0.45;
+threshold_ms        = 0.45;
 
-ctl = RC2Analysis();
-probe_ids = ctl.get_probe_ids('visual_flow', 'mismatch_nov20', 'mismatch_jul21');
+ctl                 = RC2Analysis();
+probe_ids           = ctl.get_probe_ids('visual_flow', 'mismatch_nov20', 'mismatch_jul21');
 
-firing_rates = [];
-durations = [];
+firing_rates        = [];
+durations           = [];
 
 for ii = 1 : length(probe_ids)
     
-    this_data = get_data_for_probe_id(data, probe_ids{ii});
-    clusters = this_data.VISp_clusters();
+    if isempty(data)
+        this_data   = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data   = get_data_for_probe_id(data, probe_ids{ii});
+    end
     
-    firing_rates = [firing_rates; [clusters(:).overall_firing_rate]'];
-    durations = [durations; [clusters(:).duration]'];
+    clusters        = this_data.VISp_clusters();
+    
+    firing_rates    = [firing_rates; [clusters(:).overall_firing_rate]'];
+    durations       = [durations; [clusters(:).duration]'];
 end
 
 
+%% Plot
 
-%% plot
 ball_size = scatterball_size(1);
 narrow_colour = [0.5, 0.5, 0.5];
 wide_colour = [0, 0, 0];

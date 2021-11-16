@@ -22,5 +22,3 @@ tic; figure_s3a(data, fig.h_ax('a_upper'), fig.h_ax('a_lower')); fprintf('S3A to
 tic; figure_s3b(data, fig.h_ax('b_upper'), fig.h_ax('b_lower')); fprintf('S3B took: %.3f\n', toc);
 tic; figure_s3c(data, fig.h_ax('c')); fprintf('S3C took: %.3f\n', toc);
 tic; figure_s3d(data, fig.h_ax('d')); fprintf('S3D took: %.3f\n', toc);
-
-

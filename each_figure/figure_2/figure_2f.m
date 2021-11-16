@@ -1,28 +1,29 @@
 function figure_2f(data, h_ax1, h_ax2, h_ax3)
 
-ctl = RC2Analysis();
-
+ctl                 = RC2Analysis();
 probe_ids           = ctl.get_probe_ids('mismatch_nov20', 'mismatch_jul21');
 trial_group_labels  = {'RV_gain_up'};
 order_by_label      = {'RVT_gain_up'};
-
 fs                  = 10000;
-
 baseline_t          = [-0.4, 0];
-
-% display
 padding             = [-1, 1];
 fr_limits           = [-8, 8];
+cols                = get_colours();
 
 
+%% Data
 
-%% extract and analyze data
 fr_mean             = [];
 response_magnitude  = [];
 
 for ii = 1 : length(probe_ids)
     
-    this_data   = get_data_for_probe_id(data, probe_ids{ii});
+    if isempty(data)
+        this_data = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data = get_data_for_probe_id(data, probe_ids{ii});
+    end
+    
     clusters    = this_data.VISp_clusters();
 
     for jj = 1 : length(clusters)
@@ -49,10 +50,7 @@ population_sem          = std(heatmap, [], 1) / sqrt(n_clusters);
 
 
 
-%% plot
-cols = get_colours();
-
-
+%% Plot
 
 h_im  = imagesc(h_ax2, heatmap);
 colormap(h_ax2, cols('red2blue_map'));

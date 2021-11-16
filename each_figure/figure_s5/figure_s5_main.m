@@ -1,71 +1,40 @@
-function figure_s5_main()
+function fig = figure_s5_main(data)
 
-load('running_around_mismatch_matched_trials', 'lib_git', ...
-                                               'common_t', ...
-                                               'decrease_traces', ...
-                                               'no_change_traces', ...
-                                               'matched_decrease_traces', ...
-                                               'decrease_traces_fr', ...
-                                               'no_change_traces_fr', ...
-                                               'matched_decrease_traces_fr');
+fig.h_fig = a4figure();
 
+label_positions = {'a', [42, 297 - 22, 0, 0];
+                   'b', [83, 297 - 22, 0, 0]; 
+                   'c', [42, 297 - 59, 0, 0];
+                   'd', [83, 297 - 59, 0, 0];
+                   'e', [42, 297 - 136, 0, 0];
+                   'f', [83, 297 - 136, 0, 0];
+                   'g', [125, 297 - 22, 0, 0];
+                   'h', [125, 297 - 59, 0, 0];
+                   'i', [125, 297 - 107, 0, 0];
+                   'j', [125, 297 - 136, 0, 0]};
 
-% make sure this file was generated using a specific commit of the
-% rc2_analysis library
-original_lib_git_sha1 = '8bef97444b17a948acbcbc6b6160e4223485f227'; %'cdf7873a79d87b56f1651721d2aace3e3b67a648';
-assert(strcmp(lib_git.sha1, original_lib_git_sha1));
+axes_positions = {'a', [50, 297 - 47, 27.5, 14];
+                  'b', [90, 297 - 51, 27, 27];
+                  'e', [50, 297 - 165, 28.5, 28.5];
+                  'f', [90, 297 - 165, 28.5, 28.5];
+                  'g', [132, 297 - 49, 32, 19];
+                  'h', [132, 297 - 91.6, 32, 24];
+                  'i', [134, 297 - 125.5, 28.5, 22];
+                  'j', [134, 297 - 165, 28.5, 28.5]};
 
-a4figure();
+fig.h_labels = setup_labels(fig.h_fig, label_positions);
+fig.h_ax = setup_axes(fig.h_fig, axes_positions);
 
-subplot(2, 3, 1); hold on
-plot_running_traces(common_t, [decrease_traces{:}]);
-
-subplot(2, 3, 2); hold on
-plot_running_traces(common_t, [no_change_traces{:}]);
-
-subplot(2, 3, 3); hold on
-plot_running_traces(common_t, [matched_decrease_traces{:}]);
-
-subplot(2, 3, 4); hold on
-plot_fr_traces(common_t, [decrease_traces_fr{:}]);
-
-subplot(2, 3, 5); hold on
-plot_fr_traces(common_t, [no_change_traces_fr{:}]);
-
-subplot(2, 3, 6); hold on
-plot_fr_traces(common_t, [matched_decrease_traces_fr{:}]);
+% create special axes for c
+[h_ax_s5cd_main, h_ax_s5cd_histogram] = figure_s5cd_axes_positions(fig.h_fig);
 
 
-
-function plot_running_traces(common_t, traces)
-
-yl = [0, 60];
-plot_mm_window(gca, yl);
-plot(common_t, traces, 'color', [0.5, 0.5, 0.5], 'linewidth', 0.5);
-plot(common_t, mean(traces, 2), 'color', 'k', 'linewidth', 1);
-set(gca, 'xlim', common_t([1, end]), 'ylim', yl);
-
-
-function plot_fr_traces(common_t, traces)
-
-yl = [0, 15];
-plot_mm_window(gca, yl);
-m = mean(traces, 2);
-sem = std(traces, [], 2) / sqrt(size(traces, 2));
-upper = m(:)' + sem(:)';
-lower = m(:)' - sem(:)';
-patch(gca, 'xdata', [common_t, common_t(end:-1:1)], ...
-           'ydata', [lower, upper(end:-1:1)], ...
-           'facecolor', 'r', ...
-           'edgecolor', 'none', ...
-           'facealpha', 0.5);
-plot(gca, common_t, m, 'color', 'r', 'linewidth', 1);
-set(gca, 'xlim', common_t([1, end]), 'ylim', yl);
-
-
-function plot_mm_window(h_ax, yl)
-mm_time = 0.25;
-patch(h_ax, 'xdata', [0, mm_time, mm_time, 0], ...
-            'ydata', yl([1, 1, 2, 2]), ...
-            'facecolor', [0.6, 0.6, 0.6], ...
-            'edgecolor', 'none');
+tic; figure_s5a(data, fig.h_ax('a')); fprintf('s5A took: %.3f\n', toc);
+tic; figure_s5b(data, fig.h_ax('b')); fprintf('s5B took: %.3f\n', toc);
+tic; figure_s5cd(data, h_ax_s5cd_main, h_ax_s5cd_histogram); fprintf('s5C & D took: %.3f\n', toc);
+tic; figure_s5e(data, fig.h_ax('e')); fprintf('s5E took: %.3f\n', toc);
+tic; figure_s5f(data, fig.h_ax('f')); fprintf('s5F took: %.3f\n', toc);
+tic; figure_s5g(data, fig.h_ax('g')); fprintf('s5G took: %.3f\n', toc);
+tic; figure_s5h(data, fig.h_ax('h')); fprintf('s5H took: %.3f\n', toc);
+tic; figure_s5i(fig.h_ax('i')); fprintf('s5I took: %.3f\n', toc);
+tic; figure_s5j(data, fig.h_ax('j')); fprintf('s5J took: %.3f\n', toc);

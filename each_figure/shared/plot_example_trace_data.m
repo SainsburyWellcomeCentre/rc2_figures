@@ -3,6 +3,8 @@ function plot_example_trace_data(h_ax, t, traces, spike_times, traces_to_plot, v
 cols = get_colours();
 symbols = get_symbols();
 
+size_20cmps = 2.735; % size of scale bar in mm on page (determines axis limits)
+
 text_offset = (t(end)-t(1))*(0.1/6);
 
 for i = 1 : length(traces_to_plot)
@@ -26,7 +28,7 @@ text(h_ax, t(1)-text_offset, 0, 'Sp.', ...
 axis_position = normpos2mmpos(get(h_ax, 'position'));
 axis_height = axis_position(4);
 
-y_size = 20*(axis_height / constants('size_20cmps'));
+y_size = 20*(axis_height / size_20cmps);
 
 ylim(h_ax, -5 + [0, y_size]);
 axis(h_ax, 'off');

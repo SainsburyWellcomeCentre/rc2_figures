@@ -1,13 +1,16 @@
 function figure_2h(data, h_ax)
 
-force_replication   = true;
-
 ctl                 = RC2Analysis();
-
 probe_ids           = ctl.get_probe_ids('mismatch_nov20', 'mismatch_jul21');
 trial_group_label   = 'RVT_gain_up';
+cols                = get_colours();
 
-cluster_count       = 0;
+
+%% Data
+
+mm                  = MismatchAnalysis();
+
+c                   = 0;
 p_val               = [];
 direction           = [];
 avg_baseline        = [];
@@ -18,56 +21,43 @@ relative_depth      = [];
 layer               = {};
 anatomies           = Anatomy.empty();
 
-mm                  = MismatchAnalysis();
-
-%% extract and analyze data
 for ii = 1 : length(probe_ids)
     
-    this_data = get_data_for_probe_id(data, probe_ids{ii});
+    if isempty(data)
+        this_data = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data = get_data_for_probe_id(data, probe_ids{ii});
+    end
+    
     clusters = this_data.VISp_clusters();
     
     anatomies{ii}       = data.anatomy;
     
-    trials      = this_data.get_trials_with_trial_group_label(trial_group_label);
+    trials              = this_data.get_trials_with_trial_group_label(trial_group_label);
     
-    mm_start_t  = cellfun(@(x)(x.mismatch_onset_t), trials);
-    mm_end_t    = cellfun(@(x)(x.mismatch_offset_t), trials);
-    
-    trials(mm_end_t - mm_start_t < 0.05) = [];
+    trials              = remove_invalid_mm_trials(trials);
     
     for jj = 1 : length(clusters)
         
-        % force a replication of an old figure... to remove in future
-        if force_replication
-            if ii == 4 && ismember(clusters(jj).id, [224, 225, 230])
-                continue
-            end
-        end
-        
-        cluster_count = cluster_count + 1;
+        c = c + 1;
         
         % get relative depth within layer and label of the layer for this
         % cluster
-        [relative_depth(cluster_count), layer{cluster_count}] = this_data.get_relative_layer_depth_of_cluster(clusters(jj).id);
+        [relative_depth(c), layer{c}] = this_data.get_relative_layer_depth_of_cluster(clusters(jj).id);
         
+        avg_baseline(c) = mm.get_avg_baseline_fr(clusters(jj), trials);
+        avg_response(c) = mm.get_avg_response_fr(clusters(jj), trials);
+        [~, p_val(c), direction(c)] = mm.is_response_significant(clusters(jj), trials);
         
-        avg_baseline(cluster_count) = mm.get_avg_baseline_fr(clusters(jj), trials);
-        avg_response(cluster_count) = mm.get_avg_response_fr(clusters(jj), trials);
-        [~, p_val(cluster_count), direction(cluster_count)] = mm.is_response_significant(clusters(jj), trials);
-        
-        modulation_index(cluster_count) = (avg_response(cluster_count) - avg_baseline(cluster_count)) / ...
-                                          (avg_response(cluster_count) + avg_baseline(cluster_count));
+        modulation_index(c) = (avg_response(c) - avg_baseline(c)) / (avg_response(c) + avg_baseline(c));
     end
 end
-
 
 avg_anatomy = AverageAnatomy(anatomies);
 averaged_cortical_position = avg_anatomy.from_pia_using_relative_position(relative_depth, layer);
 
 
-
 %% Plot
-cols = get_colours();
 
 x_limits = [-1, 1];
 histogram_edges = -1:0.1:1;

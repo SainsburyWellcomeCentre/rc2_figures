@@ -4,8 +4,10 @@ ctl                     = RC2Analysis();
 probe_ids               = ctl.get_probe_ids('visual_flow');
 x_trial_group_labels    = {'V_RVT', 'V_RV'};
 y_trial_group_labels    = {'VT_RVT', 'VT_RV'};
-
 threshold_ms            = 0.45;
+
+
+%% Data
 
 c                       = 0;
 x_med                   = [];
@@ -15,7 +17,12 @@ spike_class             = [];
 
 for ii = 1 : length(probe_ids)
     
-    this_data = get_data_for_probe_id(data, probe_ids{ii});
+    if isempty(data)
+        this_data = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data = get_data_for_probe_id(data, probe_ids{ii});
+    end
+    
     clusters = this_data.VISp_clusters();
     
     for jj = 1 : length(clusters)
@@ -28,9 +35,9 @@ for ii = 1 : length(probe_ids)
     end
 end
 
-%% Plot
 
-fmt.xy_limits = [0, 70];
+%% Plot
+fmt.xy_limits = [0, 60];
 fmt.tick_space = 20;
 fmt.line_order = 'bottom';
 fmt.xlabel = 'FR VF (Hz)';

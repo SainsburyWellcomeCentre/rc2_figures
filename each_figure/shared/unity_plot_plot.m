@@ -30,9 +30,9 @@ if strcmp(fmt.colour_by, 'significance')
 elseif strcmp(fmt.colour_by, 'spike_class')
     
     idx = direction == 0;
-    scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(small_ball), cols('wide_spiking'), 'fill');
+    scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('wide_spiking'));
     idx = direction == 1;
-    scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('narrow_spiking'), 'fill');
+    scatter(h_ax, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('narrow_spiking'));
 else
     error('color_by wrong')
 end
@@ -102,8 +102,8 @@ if fmt.include_inset
     
     axis_position = get(h_ax, 'position');
     
-    inset_offset_units  = 45;
-    inset_size_units    = 25;
+    inset_offset_units  = 40;
+    inset_size_units    = 20;
     inset_pad           = 3;
     inset_xy_limits     = [0, 5];
     
@@ -138,13 +138,12 @@ if fmt.include_inset
     elseif strcmp(fmt.colour_by, 'spike_class')
         
         idx = direction == 0;
-        scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(small_ball), cols('wide_spiking'), 'fill');
+        scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('wide_spiking'));
         idx = direction == 1;
-        scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('narrow_spiking'), 'fill');
+        scatter(h_inset, x_med(idx), y_med(idx), scatterball_size(large_ball), cols('narrow_spiking'));
     else
         error('color_by wrong')
     end
-    
     
     line(h_inset, inset_xy_limits, inset_xy_limits, 'color', 'k', 'linewidth', 0.5, 'linestyle', '--');
     line(h_inset, inset_xy_limits, inset_xy_limits, 'color', 'k', 'linewidth', 0.5, 'linestyle', '--');
@@ -156,5 +155,3 @@ if fmt.include_inset
         'ytick', inset_xy_limits, ...
         'yticklabel', '');
 end
-
-

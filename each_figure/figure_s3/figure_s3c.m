@@ -1,35 +1,37 @@
 function figure_s3c(data, h_ax)
 
-ctl = RC2Analysis();
-
-probe_ids           = ctl.get_probe_ids('visual_flow', 'mismatch_nov20', 'mismatch_jul21');
-trial_type_labels   = {'RVT', 'RVT_gain_up'};
-
-fs                  = 10000;
-baseline_t          = [-0.4, 0];
-response_t          = [0, 0.4];
-
-% display
-padding             = [-1, 1];
-fr_limits           = [-8, 8];
-
-threshold_ms        = 0.45;
+ctl                     = RC2Analysis();
+probe_ids               = ctl.get_probe_ids('visual_flow', 'mismatch_nov20', 'mismatch_jul21');
+trial_type_labels       = {'RVT', 'RVT_gain_up'};
+fs                      = 10000;
+baseline_t              = [-0.4, 0];
+response_t              = [0, 0.4];
+padding                 = [-1, 1];
+fr_limits               = [-8, 8];
+threshold_ms            = 0.45;
+cols                    = get_colours();
 
 bouts_options.min_bout_duration   = 2;
 bouts_options.include_200ms       = true;
 
 
-%% extract and analyze data
-fr_mean = [];
-spike_class = [];
+%% Data
+
+fr_mean             = [];
+spike_class         = [];
 
 for ii = 1 : length(probe_ids)
+    ii
+    if isempty(data)
+        this_data = ctl.load_formatted_data(probe_ids{ii});
+    else
+        this_data = get_data_for_probe_id(data, probe_ids{ii});
+    end
     
-    this_data = get_data_for_probe_id(data, probe_ids{ii});
     clusters = this_data.VISp_clusters();
 
     for jj = 1 : length(clusters)
-        
+        jj
         [fr_traces, common_t] = this_data.get_fr_responses(clusters(jj).id, trial_type_labels, 'motion', padding, fs, bouts_options);
         fr_mean(end+1, :) = mean(fr_traces, 1);
         spike_class(end+1) = clusters(jj).duration < threshold_ms;
@@ -50,15 +52,12 @@ delta_fr = response_fr - baseline_fr;
 [~, cluster_idx_sorted] = sort(delta_fr, 'ascend');
 
 heatmap = fr_mean(cluster_idx_sorted, :);
-
 heatmap = bsxfun(@minus, heatmap, mean(heatmap(:, baseline_idx), 2));
 
 key_size = range(padding) * (0.1/2);
 
 
-%% plot
-cols        = get_colours();
-
+%% Plot
 h_im        = imagesc(h_ax, heatmap);
 set(h_im, 'xdata', common_t);
 
