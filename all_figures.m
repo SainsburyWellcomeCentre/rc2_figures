@@ -1,7 +1,7 @@
 % run plotting of all figures
 
 save_enabled = true;
-save_dir = fullfile('C:\Users\lee\Desktop', datestr(now, 'figures_yyyymmdd_HHMM'));
+save_dir = fullfile('C:\Users\lee\Desktop', sprintf('figures_%s', datestr(now, 'yyyymmdd_HHMM')));
 
 % whether to load all data at the outset (requires huge amount of ram - up
 % to 128GB, but make things MUCH faster)
