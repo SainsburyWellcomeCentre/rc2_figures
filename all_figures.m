@@ -5,7 +5,7 @@ save_dir = fullfile('C:\Users\lee\Desktop', sprintf('figures_%s', datestr(now, '
 
 % whether to load all data at the outset (requires huge amount of ram - up
 % to 128GB, but make things MUCH faster)
-load_data_at_start = false;
+load_data_at_start = true;
 
 
 %% Run

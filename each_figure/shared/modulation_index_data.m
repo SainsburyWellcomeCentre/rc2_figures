@@ -16,7 +16,7 @@ anatomies               = Anatomy.empty();
 
 
 for ii = 1 : length(probe_ids)
-    
+    ii
     if isempty(data)
         this_data       = ctl.load_formatted_data(probe_ids{ii});
     else
@@ -25,7 +25,7 @@ for ii = 1 : length(probe_ids)
     
     clusters            = this_data.VISp_clusters();
     
-    anatomies{ii}       = data.anatomy;
+    anatomies{ii}       = this_data.anatomy;
     
     for jj = 1 : length(clusters)
         
