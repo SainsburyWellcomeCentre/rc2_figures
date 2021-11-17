@@ -34,7 +34,7 @@ save_figure(save_dir, 'figure_s2');
 figure_s3_main(data);
 save_figure(save_dir, 'figure_s3');
 
-figure_s4_main(data);
+figure_s4_main();
 save_figure(save_dir, 'figure_s4');
 
 figure_s5_main(data);
