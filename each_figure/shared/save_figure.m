@@ -1,5 +1,8 @@
- function save_figure(save_dir, fname)
+function save_figure(save_dir, fname, save_enabled)
 
+% skip if saving is not enabled
+if ~save_enabled; return; end
+ 
 ctl = RC2Analysis();
 
 lib_git = ctl.save.git.info;
