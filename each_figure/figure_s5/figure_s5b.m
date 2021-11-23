@@ -1,8 +1,8 @@
 function figure_s5b(data, h_ax)
 
 ctl                 = RC2Analysis();
-probe_ids           = ctl.get_probe_ids('darkness');
-trial_group_labels  = {'T_bank', 'T_RT', 'T_R'};
+probe_ids           = ctl.get_probe_ids('darkness', 'mismatch_darkness_oct21');
+trial_group_labels  = {'T_bank', 'T_RT', 'T_R', 'T'};
 
 
 %% Data
