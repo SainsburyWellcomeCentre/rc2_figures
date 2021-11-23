@@ -8,7 +8,6 @@ baseline_t              = [-0.4, 0];
 response_t              = [0, 0.4];
 padding                 = [-1, 1];
 fr_limits               = [-8, 8];
-threshold_ms            = 0.45;
 cols                    = get_colours();
 
 bouts_options.min_bout_duration   = 2;
@@ -18,7 +17,7 @@ bouts_options.include_200ms       = true;
 %% Data
 
 fr_mean             = [];
-spike_class         = [];
+spike_class         = {};
 
 for ii = 1 : length(probe_ids)
     ii
@@ -31,10 +30,10 @@ for ii = 1 : length(probe_ids)
     clusters = this_data.VISp_clusters();
 
     for jj = 1 : length(clusters)
-        jj
+        
         [fr_traces, common_t] = this_data.get_fr_responses(clusters(jj).id, trial_type_labels, 'motion', padding, fs, bouts_options);
         fr_mean(end+1, :) = mean(fr_traces, 1);
-        spike_class(end+1) = clusters(jj).duration < threshold_ms;
+        spike_class{end+1} = clusters(jj).spiking_class;
     end
 end
 
@@ -69,7 +68,7 @@ set(h_ax, 'clim', fr_limits, 'ytick', [1, n_clusters], 'xlim', padding + [-key_s
 
 for i = 1 : n_clusters
     
-    if spike_class(i)
+    if strmcp(spike_class{i}, 'narrow')
         col = [0.5, 0.5, 0.5];
     else
         col = [0, 0, 0];

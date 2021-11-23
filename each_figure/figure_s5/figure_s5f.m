@@ -61,6 +61,10 @@ for ii = 1 : length(probe_ids)
 end
 
 
+%% Print
+assignin('base', 'classification_inh', classification);
+
+
 %% Plot
 hold on;
 scatter(h_ax, p_val(classification == 1), slope(classification == 1), scatterball_size(1), cols{1}, 'fill');

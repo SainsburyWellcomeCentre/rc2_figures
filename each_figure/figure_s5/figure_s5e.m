@@ -60,6 +60,10 @@ for ii = 1 : length(probe_ids)
 end
 
 
+%% Print
+assignin('base', 'classification_exc', classification);
+
+
 %% Plot
 
 hold on;

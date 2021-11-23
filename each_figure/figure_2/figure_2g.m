@@ -8,12 +8,16 @@ trial_group_label   = 'RVT_gain_up';
 %% Data
 
 mm                  = MismatchAnalysis();
+mm.method           = 'anova';
 
 c                   = 0;
 p_val               = [];
 direction           = [];
 avg_baseline        = [];
 avg_response        = [];
+baseline_normal     = [];
+response_normal     = [];
+spike_class         = {};
 
 for ii = 1 : length(probe_ids)
     
@@ -36,8 +40,18 @@ for ii = 1 : length(probe_ids)
         avg_baseline(c) = mm.get_avg_baseline_fr(clusters(jj), trials);
         avg_response(c) = mm.get_avg_response_fr(clusters(jj), trials);
         [~, p_val(c), direction(c)] = mm.is_response_significant(clusters(jj), trials);
+        baseline_normal(c) = mm.is_baseline_normal(clusters(jj), trials);
+        response_normal(c) = mm.is_response_normal(clusters(jj), trials);
+        spike_class{c} = clusters(jj).spiking_class;
     end
 end
+
+
+%% Print
+fprintf('\n\nFigure 2G, mismatch response R:VF+T\n');
+print_unity_plot_stats(avg_baseline, avg_response, direction, spike_class)
+fprintf(' Fraction in which we reject normality in baseline: %.2f%% (%i/%i)\n', 100*sum(~baseline_normal)/length(baseline_normal), sum(~baseline_normal), length(baseline_normal));
+fprintf(' Fraction in which we reject normality in response: %.2f%% (%i/%i)\n', 100*sum(~response_normal)/length(response_normal), sum(~response_normal), length(response_normal));
 
 
 %% Plot

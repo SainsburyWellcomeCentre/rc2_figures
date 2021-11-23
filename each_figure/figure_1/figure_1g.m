@@ -7,9 +7,13 @@ VT_trial_groups     = {'VT_RVT', 'VT_RV'};
 
 
 %% Data
-
-[x_median, y_median, direction] = ...
+[x_median, y_median, direction, spike_class] = ...
     unity_plot_data(data, experiment_groups, V_trial_groups, VT_trial_groups, inf);
+
+
+%% Print
+fprintf('\n\nFigure 1G, VF vs. VF+T\n');
+print_unity_plot_stats(x_median, y_median, direction, spike_class);
 
 
 %% Plot

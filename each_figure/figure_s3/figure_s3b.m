@@ -1,6 +1,6 @@
 function figure_s3b(data, h_ax1, h_ax2)
 
-threshold_ms        = 0.45;
+threshold_ms        = constants('spiking_class_threshold_ms');
 
 ctl                 = RC2Analysis();
 probe_ids           = ctl.get_probe_ids('visual_flow', 'mismatch_nov20', 'mismatch_jul21');

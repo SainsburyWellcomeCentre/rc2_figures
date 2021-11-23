@@ -34,6 +34,19 @@ for ii = 1 : length(probe_ids)
 end
 
 
+%% Print
+n_translation = sum(T_p_val < 0.05);
+n_translation_and_running = sum(T_p_val < 0.05 & R_p_val < 0.05);
+
+fprintf('\n\nFigure 2I, T and R responsiveness\n');
+fprintf('# translation sensitive: %i;  of which also running: %i (%.2f%%, %i/%i)\n', ...
+            n_translation, ...
+            n_translation_and_running, ...
+            100 * n_translation_and_running / n_translation, ...
+            n_translation_and_running, ...
+            n_translation);
+
+
 %% Plot
 cols                = get_colours();
 

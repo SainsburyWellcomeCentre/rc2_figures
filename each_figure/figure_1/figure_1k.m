@@ -9,8 +9,13 @@ max_n_trials        = 10;
 
 %% Data
 
-[x_median, y_median, direction] = ...
+[x_median, y_median, direction, spike_class] = ...
     unity_plot_data(data, experiment_groups, RV_trial_groups, RVT_trial_groups, max_n_trials);
+
+
+%% Print
+fprintf('\n\nFigure 1K, R+VF vs. R+VF+T\n');
+print_unity_plot_stats(x_median, y_median, direction, spike_class);
 
 
 %% Plot

@@ -12,6 +12,17 @@ VT_trial_group_labels       = {'VT_RVT', 'VT_RV'};
     modulation_index_data(data, experiment_groups, V_trial_group_labels, VT_trial_group_labels, inf);
 
 
+%% Print
+responsive_idx  = abs(direction) == 1;
+n_responsive    = sum(responsive_idx);
+mi_avg          = mean(modulation_index(responsive_idx));
+mi_std          = std(modulation_index(responsive_idx));
+
+fprintf('\n\nFigure 1H, VF vs. VF+T, modulation index\n');
+fprintf('Avg. MI of responive clusters: %.2f + %.2f (n=%i)\n', mi_avg, mi_std, n_responsive);
+fprintf('  # MI nan: %i\n', sum(isnan(modulation_index)));
+
+
 %% Plot
 
 fmt.x_label = {'Modulation index', 'VF vs. VF+T'};

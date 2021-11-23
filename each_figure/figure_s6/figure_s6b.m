@@ -14,6 +14,7 @@ p_val               = [];
 direction           = [];
 avg_baseline        = [];
 avg_response        = [];
+spike_class         = {};
 
 for ii = 1 : length(probe_ids)
     
@@ -36,8 +37,14 @@ for ii = 1 : length(probe_ids)
         avg_baseline(c) = mm.get_avg_baseline_fr(clusters(jj), trials);
         avg_response(c) = mm.get_avg_response_fr(clusters(jj), trials);
         [~, p_val(c), direction(c)] = mm.is_response_significant(clusters(jj), trials);
+        spike_class{c} = clusters(jj).spiking_class;
     end
 end
+
+
+%% Print
+fprintf('\n\nFigure S6B, mismatch response R:T\n');
+print_unity_plot_stats(avg_baseline, avg_response, direction, spike_class)
 
 
 %% Plot

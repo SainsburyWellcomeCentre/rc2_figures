@@ -1,4 +1,4 @@
-function [x_median, y_median, direction] = unity_plot_data(data, experiment_groups, x_trial_group_labels, y_trial_group_labels, max_n_trials)
+function [x_median, y_median, direction, spike_class] = unity_plot_data(data, experiment_groups, x_trial_group_labels, y_trial_group_labels, max_n_trials)
 
 ctl                 = RC2Analysis();
 
@@ -8,6 +8,7 @@ c                   = 0;
 x_median            = [];
 y_median            = [];
 direction           = [];
+spike_class         = {};
 
 for ii = 1 : length(probe_ids)
     
@@ -24,5 +25,7 @@ for ii = 1 : length(probe_ids)
         c = c + 1;
         [~, ~, direction(c), x_median(c), y_median(c)] = ...
             this_data.is_motion_vs_motion_significant(clusters(jj).id, x_trial_group_labels, y_trial_group_labels, max_n_trials);
+        
+        spike_class{c} = clusters(jj).spiking_class;
     end
 end

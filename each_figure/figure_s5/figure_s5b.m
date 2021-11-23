@@ -11,6 +11,7 @@ c                   = 0;
 x_med               = [];
 y_med               = [];
 direction           = [];
+spike_class         = {};
 
 for ii = 1 : length(probe_ids)
     
@@ -26,8 +27,14 @@ for ii = 1 : length(probe_ids)
         
         c = c + 1;
         [~, ~, direction(c), x_med(c), y_med(c)] = this_data.is_stationary_vs_motion_significant(clusters(jj).id, trial_group_labels);
+        spike_class{c} = clusters(jj).spiking_class;
     end
 end
+
+
+%% Print
+fprintf('\n\nFigure S5B, T, stationary vs. motion\n');
+print_unity_plot_stats(x_med, y_med, direction, spike_class);
 
 
 %% Plot
