@@ -3,14 +3,14 @@ function figure_s4_main()
 fig.h_fig = a4figure();
 
 label_positions = {'a', [56, 297 - 19, 0, 0];
-                   'b', [123, 297 - 19, 0, 0]};
+                   'b', [92, 297 - 19, 0, 0]};
 
-axes_positions = {'a_upper_left', [68, 297 - 50, 23.5, 23.5];
-                  'a_lower_left', [68, 297 - 81, 23.5, 23.5];
-                  'a_upper_right', [99, 297 - 50, 23.5, 23.5];
-                  'a_lower_right', [99, 297 - 81, 23.5, 23.5];
-                  'b_upper', [130, 297 - 50, 23.5, 23.5];
-                  'b_lower', [130, 297 - 81, 23.5, 23.5]};
+axes_positions = {'a_upper', [68, 297 - 50, 23.5, 23.5];
+                  'a_lower', [68, 297 - 81, 23.5, 23.5];
+                  'b_upper_left', [99, 297 - 50, 23.5, 23.5];
+                  'b_lower_left', [99, 297 - 81, 23.5, 23.5];
+                  'b_upper_right', [130, 297 - 50, 23.5, 23.5];
+                  'b_lower_right', [130, 297 - 81, 23.5, 23.5]};
 
 fig.h_labels = setup_labels(fig.h_fig, label_positions);
 fig.h_ax = setup_axes(fig.h_fig, axes_positions);
@@ -41,23 +41,30 @@ these_traces = [decrease_traces{:}];
 plot_running_traces(common_t(1:100:end), these_traces(1:100:end, :), 'Negative change trials');
 ylabel('speed (cm/s)', 'fontsize', 8);
 
-set(fig.h_fig, 'currentaxes', fig.h_ax('a_upper_right')); hold on;
+%%
+set(fig.h_fig, 'currentaxes', fig.h_ax('a_upper')); hold on;
 these_traces = [no_change_traces{:}];
 plot_running_traces(common_t(1:100:end), these_traces(1:100:end, :), 'No change trials');
+ylabel('speed (cm/s)', 'fontsize', 8);
 
-set(fig.h_fig, 'currentaxes', fig.h_ax('b_upper')); hold on;
+set(fig.h_fig, 'currentaxes', fig.h_ax('b_upper_left')); hold on;
+these_traces = [decrease_traces{:}];
+plot_running_traces(common_t(1:100:end), these_traces(1:100:end, :), 'Negative change trials');
+
+set(fig.h_fig, 'currentaxes', fig.h_ax('b_upper_right')); hold on;
 these_traces = [matched_decrease_traces{:}];
 plot_running_traces(common_t(1:100:end), these_traces(1:100:end, :), 'Matched trials');
 
-set(fig.h_fig, 'currentaxes', fig.h_ax('a_lower_left')); hold on;
-plot_fr_traces(common_t, [decrease_traces_fr{:}], bsl_limits);
+
+set(fig.h_fig, 'currentaxes', fig.h_ax('a_lower')); hold on;
+plot_fr_traces(common_t, [no_change_traces_fr{:}], bsl_limits);
 ylabel('\Delta FR (Hz)', 'fontsize', 8);
 
-set(fig.h_fig, 'currentaxes', fig.h_ax('a_lower_right')); hold on;
-plot_fr_traces(common_t, [no_change_traces_fr{:}], bsl_limits);
+set(fig.h_fig, 'currentaxes', fig.h_ax('b_lower_left')); hold on;
+plot_fr_traces(common_t, [decrease_traces_fr{:}], bsl_limits);
 xlabel('time from gain up (s)', 'fontsize', 8);
 
-set(fig.h_fig, 'currentaxes', fig.h_ax('b_lower')); hold on;
+set(fig.h_fig, 'currentaxes', fig.h_ax('b_lower_right')); hold on;
 plot_fr_traces(common_t, [matched_decrease_traces_fr{:}], bsl_limits);
 
 
