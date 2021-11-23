@@ -27,7 +27,7 @@ for ii = 1 : length(probe_ids)
         
         c = c + 1;
         [~, ~, direction(c), x_med(c), y_med(c)] = this_data.is_stationary_vs_motion_significant(clusters(jj).id, trial_group_labels);
-        spike_class{c} = clusters(jj).spike_class;
+        spike_class{c} = clusters(jj).spiking_class;
     end
 end
 

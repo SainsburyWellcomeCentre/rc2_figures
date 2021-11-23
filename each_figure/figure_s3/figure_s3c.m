@@ -68,7 +68,7 @@ set(h_ax, 'clim', fr_limits, 'ytick', [1, n_clusters], 'xlim', padding + [-key_s
 
 for i = 1 : n_clusters
     
-    if strmcp(spike_class{i}, 'narrow')
+    if strcmp(spike_class{i}, 'narrow')
         col = [0.5, 0.5, 0.5];
     else
         col = [0, 0, 0];
