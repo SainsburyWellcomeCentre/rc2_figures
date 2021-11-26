@@ -6,8 +6,13 @@ y_trial_group_labels    = {'VT_RVT', 'VT_RV'};
 
 
 %% Data
-[x_median, y_median, ~, spike_class] = ...
+[x_median, y_median, direction, spike_class] = ...
     unity_plot_data(data, experiment_groups, x_trial_group_labels, y_trial_group_labels, inf);
+
+
+%% Print
+fprintf('Figure S3d\n');
+print_unity_plot_stats(x_median, y_median, direction, spike_class);
 
 
 %% Plot
