@@ -59,6 +59,6 @@ set(h_ax, 'xlim', [0.5, 4.5], ...
 ylabel(h_ax, 'FR (Hz)', 'fontsize', 8);
 
 text(h_ax, 1, -2, 'bsl.', 'color', 'k', 'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'top');
-text(h_ax, 2, -2, 'VF', 'color', 'k', 'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'top');
+text(h_ax, 2, -2, 'R', 'color', 'k', 'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'top');
 text(h_ax, 3, -2, 'bsl.', 'color', 'k', 'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'top');
-text(h_ax, 4, -2, 'VF+T', 'color', 'k', 'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'top');
+text(h_ax, 4, -2, 'R+T', 'color', 'k', 'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'top');
