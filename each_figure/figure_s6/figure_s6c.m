@@ -31,7 +31,7 @@ for ii = 1 : length(probe_ids)
     
     clusters = this_data.VISp_clusters();
     
-    anatomies{ii}       = data.anatomy;
+    anatomies{ii}       = this_data.anatomy;
     
     trials              = this_data.get_trials_with_trial_group_label(trial_group_label);
     
