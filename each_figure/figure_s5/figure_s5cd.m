@@ -11,7 +11,7 @@ cols                = {[229, 37, 33]/255, [71, 131, 196]/255;
                        [243, 153, 123]/255, [0, 156, 220]/255;
                        [138, 16, 2]/255, [29, 113, 184]/255};
 
-trial_group_labels = {'T_bank', 'T_RT', 'T_R'};
+trial_group_labels = {'T_bank', 'T_RT', 'T_R', 'T'};
 
 txt                 = {'Exc. not tuned', 'Sup. not tuned';
                        'Exc. high speeds', 'Sup. high speeds';
