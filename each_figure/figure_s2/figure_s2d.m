@@ -33,7 +33,7 @@ end
 
 
 %% Print
-fprintf('\n\nFigure S2D, VF+T, stationary vs. motion\n');
+fprintf('\n\nFigure S2D, R+VF, stationary vs. motion\n');
 print_unity_plot_stats(x_med, y_med, direction, spike_class);
 
 

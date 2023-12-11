@@ -66,19 +66,24 @@ assignin('base', 'classification_exc', classification);
 
 %% Plot
 
+x_lim = [1e-5, 1];
+y_lim = [-0.2, 0.5];
+y_tick = -0.2:0.2:0.4;
+y_tick_label = {'-0.2', '0.0', '0.2', '0.4'};
+
 hold on;
 scatter(h_ax, p_val(classification == 1), slope(classification == 1), scatterball_size(1), cols{1}, 'fill');
 scatter(h_ax, p_val(classification == 2), slope(classification == 2), scatterball_size(1), cols{2}, 'fill');
 scatter(h_ax, p_val(classification == 3), slope(classification == 3), scatterball_size(1), cols{3}, 'fill');
 
-set(h_ax, 'xscale', 'log', 'xlim', [1e-5, 1], 'ylim', [-0.2, 0.2], 'ytick', [-0.2, 0, 0.2], 'yticklabel', {'-0.2', '0.0', '0.2'}, 'fontsize', 8);
+set(h_ax, 'xscale', 'log', 'xlim', x_lim, 'ylim', y_lim, 'ytick', y_tick, 'yticklabel', y_tick_label, 'fontsize', 8);
 
-line(h_ax, [0.05, 0.05], [-0.2, 0.2], 'color', [0.6, 0.6, 0.6], 'linestyle', '--');
-line(h_ax, [1e-5, 1], [0, 0], 'color', [0.6, 0.6, 0.6], 'linestyle', '--');
+line(h_ax, [0.05, 0.05], y_lim, 'color', [0.6, 0.6, 0.6], 'linestyle', '--');
+line(h_ax, x_lim, [0, 0], 'color', [0.6, 0.6, 0.6], 'linestyle', '--');
 
 xl = get(h_ax, 'xlim');
 
-text(h_ax, 10^mean(log10(xl)), 0.2, sprintf('Excited %.1f%%', 100*sum(~isnan(classification))/length(classification)), ...
+text(h_ax, 10^mean(log10(xl)), y_lim(2), sprintf('Excited %.1f%%', 100*sum(~isnan(classification))/length(classification)), ...
         'fontsize', 8, 'horizontalalignment', 'center', 'verticalalignment', 'bottom')
 
 xlabel(h_ax, 'Significance (p-value)', 'fontsize', 8);
