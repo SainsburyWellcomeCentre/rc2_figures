@@ -18,5 +18,10 @@ Open `all_figures.m` and change the options at the top of that file. Options are
 `load_data_at_start`: whether to load all the data before running the code to generate the figures.
 Pre-loading the data makes processing much faster, but takes up more memory than the average machine has (on the order of 100GB).
 
+Run: 
+setup_paths         (Make sure that the server where data is stored is mounted - e.g., winstor - and that Matlab paths are setup correctly)
+load_all_data       (in case load_data_at_start = false)
+all_figures
+
 
 Running `all_figures.m` will generate all figures/figure panels and print statistics to the MATLAB command window.

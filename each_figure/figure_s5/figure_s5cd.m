@@ -11,8 +11,6 @@ cols                = {[229, 37, 33]/255, [71, 131, 196]/255;
                        [243, 153, 123]/255, [0, 156, 220]/255;
                        [138, 16, 2]/255, [29, 113, 184]/255};
 
-trial_group_labels = {'T_bank', 'T_RT', 'T_R', 'T'};
-
 txt                 = {'Exc. not tuned', 'Sup. not tuned';
                        'Exc. high speeds', 'Sup. high speeds';
                        'Exc. low speeds', 'Sup. low speeds'};
@@ -35,6 +33,12 @@ for ii = 1 : size(probe_ids, 2)
             this_data   = ctl.load_formatted_data(probe_ids{jj, ii});
         else
             this_data   = get_data_for_probe_id(data, probe_ids{jj, ii});
+        end
+        
+        if contains(probe_ids{ii}, 'CA_176')
+            trial_group_labels = {'T_bank', 'T_RT', 'T_R'};
+        else
+            trial_group_labels = {'T_RT', 'T_R'};
         end
         
         tuning{jj, ii} = this_data.load_tuning_curves(cluster_ids(jj, ii), trial_group_labels);
