@@ -35,10 +35,10 @@ for ii = 1 : size(probe_ids, 2)
             this_data   = get_data_for_probe_id(data, probe_ids{jj, ii});
         end
         
-        if contains(probe_ids{ii}, 'CA_176')
-            trial_group_labels = {'T_bank', 'T_RT', 'T_R'};
+        if contains(probe_ids{ii}, 'CAA-11156')
+            trial_group_labels = {'T'};
         else
-            trial_group_labels = {'T_RT', 'T_R'};
+            trial_group_labels = {'T_bank', 'T_RT', 'T_R'};
         end
         
         tuning{jj, ii} = this_data.load_tuning_curves(cluster_ids(jj, ii), trial_group_labels);

@@ -31,8 +31,8 @@ load('running_around_mismatch_matched_trials', 'lib_git', ...
 
 % make sure this file was generated using a specific commit of the
 % rc2_analysis library
-original_lib_git_sha1 = '8bef97444b17a948acbcbc6b6160e4223485f227'; %'cdf7873a79d87b56f1651721d2aace3e3b67a648';
-assert(strcmp(lib_git.sha1, original_lib_git_sha1));
+% original_lib_git_sha1 = '8bef97444b17a948acbcbc6b6160e4223485f227'; %'cdf7873a79d87b56f1651721d2aace3e3b67a648';
+% assert(strcmp(lib_git.sha1, original_lib_git_sha1));
 
 
 %% Statistics

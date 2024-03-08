@@ -3,14 +3,13 @@ function figure_s5e(data, h_ax)
 ctl                 = RC2Analysis();
 probe_ids           = ctl.get_probe_ids('darkness', 'mismatch_darkness_oct21');
 
+                   
 trial_group_labels = cell(1, length(probe_ids));
 for ii = 1 : length(probe_ids)
-    if contains(probe_ids{ii}, 'CA_176')
+    if contains(probe_ids{ii}, 'CAA-11156')
+        trial_group_labels{ii} = 'T';
+    else
         trial_group_labels{ii} = {'T_bank', 'T_RT', 'T_R'};
-    elseif contains(probe_ids{ii}, 'CAA-11124')
-        trial_group_labels{ii} = {'T_RT', 'T_R'};
-    elseif strcmp(ctl.get_experiment_group_from_probe_id(probe_ids{ii}), 'mismatch_darkness_oct21')
-        trial_group_labels{ii} = {'T'};
     end
 end
 
