@@ -1,7 +1,7 @@
 
 # mvelez_ms_figures
 
-Code to replicate the figures in Velez-Fort, Cossell, Margrie (202x) *Title* Journal.  Code developed in MATLAB 2021a on Windows 10.
+Code to replicate the figures in Velez-Fort, Cossell, Porta, Clopath, Margrie (202x) *Title* Journal.  Code developed in MATLAB 2021a on Windows 10.
 
 
 Prerequisites
