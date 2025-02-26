@@ -2,7 +2,7 @@
 Code to replicate an older version of the figures in Velez-Fort, Cossell, Porta, Clopath, Margrie (2025). Code developed in MATLAB 2021a on Windows 10.
 
 ## Prerequisites
-This code requires [`rc2_analysis`](https://github.com/SainsburyWellcomeCentre/rc2_analysis) to be on the MATLAB path, and the [formatted data](https://figshare.com/s/05f3b5b43d048834a35e?file=51218171). 
+This code requires [`rc2_analysis`](https://github.com/SainsburyWellcomeCentre/rc2_analysis) to be on the MATLAB path, and the [formatted data](https://figshare.com/articles/dataset/Pre-processed_data_for_V_lez-Fort_et_al_2025/28034498?file=51218171). The files in figshare correspond to those in the `experiment_list.csv` file.
 
 ## Instructions
 Open `all_figures.m` and change the options at the top of that file. Options are:
